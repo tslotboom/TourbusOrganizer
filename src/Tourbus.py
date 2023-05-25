@@ -44,13 +44,13 @@ class Tourist(BusHelper):
                 score += self.calculateSeatScore(position)
         return score
 
-    # def alreadySatInRow(self, seatNum: int) -> bool:
-    #     row, col = self.getRowAndCol(seatNum)
-    #     for oldSeat in self.seatPositions:
-    #         oldRow, oldCol = self.getRowAndCol(oldSeat)
-    #         if row == oldRow:
-    #             return True
-    #     return False
+    def alreadySatInRow(self, seatNum: int) -> bool:
+        row, col = self.getRowAndCol(seatNum)
+        for oldSeat in self.seatPositions:
+            oldRow, oldCol = self.getRowAndCol(oldSeat)
+            if row == oldRow:
+                return True
+        return False
 
 
 class BusContainer(BusHelper):
@@ -127,44 +127,41 @@ class Tourbus(BusHelper):
             self.fillSeatsForDay()
             self.reorderTouristList()
 
-
     def fillSeatsForDay(self):
         bus = BusContainer(len(self.tourists))
         if self.dayNum == 0:
             self.fillBusOnDayZero(bus)
         else:
             self.fillBus(bus)
-        # print(bus)
         self.busDays.append(bus)
 
     def fillBus(self, bus):
         for tourist in self.tourists:
+            ignoreRowClause = False
             ignoreFairClause = False
             ignoreNeighbourClause = False
             seatFound = False
             while not seatFound:
                 for seatNum in range(self.totalPossibleSeats):
                     seat = bus.get(seatNum)
-                    if seat is None:
-                        seatScoreIsFair = self.seatScoreIsFair(tourist, seatNum)
-                        seatCloseToPreviousNeighbours = \
-                            self.seatCloseToPreviousNeighbours(tourist, seatNum, bus)
-                        if ((seatScoreIsFair or ignoreFairClause) and
-                                (not seatCloseToPreviousNeighbours or ignoreNeighbourClause)):
-                            bus.add(tourist, seatNum)
-                            seatFound = True
-                            break
+                    if (seat is None and
+                            (not tourist.alreadySatInRow(seatNum) or ignoreRowClause) and
+                            (self.seatScoreIsFair(tourist, seatNum) or ignoreFairClause) and
+                            (not self.seatCloseToPreviousNeighbours(tourist, seatNum, bus) or ignoreNeighbourClause)):
+                        bus.add(tourist, seatNum)
+                        seatFound = True
+                        break
                 if not seatFound:
-                    if self.neighbourThreshold < self.MAX_NEIGHBOUR_THRESHOLD:
+                    if not ignoreRowClause:
+                        ignoreRowClause = True
+                    elif self.neighbourThreshold < self.MAX_NEIGHBOUR_THRESHOLD:
                         self.neighbourThreshold += 1
                     elif not ignoreNeighbourClause:
                         ignoreNeighbourClause = True
-                    # elif self.seatScoreTolerance > self.MAX_SEAT_SCORE_TOLERANCE:
-                    #     self.seatScoreTolerance += 1
                     elif not ignoreFairClause:
                         ignoreFairClause = True
                     else:
-                        raise RuntimeError("Can't find a damn seat mate")  # TODO
+                        raise RuntimeError("Can't find a damn seat. This error shouln")  # TODO
 
     def fillBusOnDayZero(self, bus):
         count = 0

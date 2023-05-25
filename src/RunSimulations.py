@@ -23,8 +23,8 @@ class Stats:
 
 if __name__ == "__main__":
     minDays = 1
-    maxDays = 32
-    maxTourists = 16
+    maxDays = 28
+    maxTourists = 20
     stats = {}
 
     for numDays in range(minDays, maxDays):
@@ -52,8 +52,11 @@ if __name__ == "__main__":
         z.extend(numDays for _ in range(len(stats[numDays])))
 
     plt.scatter(x, y, c=z, cmap='rainbow')
+    plt.xticks([i.numTourists for i in stats[1]])
     plt.colorbar(label="Tour Length (Days)")
     plt.show()
+
+
 
 
 
