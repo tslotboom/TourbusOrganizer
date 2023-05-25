@@ -52,13 +52,14 @@ class TestTourist(unittest.TestCase):
         self.assertEqual(tourist.calculateTotalSeatScore(), 0)
         tourist.seatPositions = [1, 8, 2, 5, 3, 12]
         self.assertAlmostEqual(tourist.calculateTotalSeatScore(), 14)
-    #
-    # def testTouristAlreadySatInRow(self):
-    #     seatNum = 1
-    #     tourist = Tourist('bob')
-    #     tourist.seatPositions.append(seatNum)
-    #     self.assertTrue(tourist.alreadySatInRow(seatNum))
-    #     self.assertFalse(tourist.alreadySatInRow(0))
+
+    def testTouristAlreadySatInRow(self):
+        seatNum = 1
+        tourist = Tourist('bob')
+        tourist.seatPositions.append(seatNum)
+        self.assertTrue(tourist.alreadySatInRow(seatNum))
+        self.assertTrue(tourist.alreadySatInRow(0))
+        self.assertFalse(tourist.alreadySatInRow(2))
 
 
 class TestTourbus(unittest.TestCase):

@@ -51,14 +51,12 @@ if __name__ == "__main__":
         y.extend([i.getAvgDeviance() for i in stats[numDays]])
         z.extend(numDays for _ in range(len(stats[numDays])))
 
+    print("Max deviance={:.2f}".format(max(y)))
+    print("Average deviance={:.2f}".format(sum(y)/len(y)))
+
     plt.scatter(x, y, c=z, cmap='rainbow')
     plt.xticks([i.numTourists for i in stats[1]])
     plt.colorbar(label="Tour Length (Days)")
     plt.show()
-
-
-
-
-
-
+    plt.close()
 
