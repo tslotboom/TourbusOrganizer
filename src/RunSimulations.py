@@ -1,6 +1,5 @@
 from typing import Dict
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from .Tourbus import Tourbus, Tourist
