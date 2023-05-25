@@ -1,9 +1,18 @@
 import copy
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import numpy as np
 from collections import OrderedDict
+from enum import Enum
 
 SPOTS_PER_ROW = 2
+
+
+class NeightbourClassification(Enum):
+    SAME = 4
+    BESIDE = 3
+    VERTICAL = 2
+    DIAGONAL = 1
+    OTHER = 0
 
 
 class BusHelper:
@@ -23,12 +32,12 @@ class Tourist(BusHelper):
         self.name = name
         self.seatPositions = []
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name
 
     def calculateTotalSeatScore(self) -> float:
         if len(self.seatPositions) == 0:
-            raise RuntimeError("Can't calculate seat score, tourist hasn't sat anywhere yet")
+            return 0
         else:
             score = 0
             for position in self.seatPositions:
@@ -39,9 +48,48 @@ class Tourist(BusHelper):
         row, col = self.getRowAndCol(seatNum)
         for oldSeat in self.seatPositions:
             oldRow, oldCol = self.getRowAndCol(oldSeat)
-            if col == oldCol:
+            if row == oldRow:
                 return True
         return False
+
+
+class BusContainer(BusHelper):
+
+    def __init__(self, numTourists):
+        self.totalPossibleSpots = ((numTourists + 1) // 2) * 2
+        rows = self.totalPossibleSpots // 2
+        self.bus = []
+        for i in range(rows):
+            self.bus.append([None] * SPOTS_PER_ROW)
+
+    def __repr__(self) -> str:
+        string = ""
+        for i in range(self.totalPossibleSpots):
+            row, col = self.getRowAndCol(i)
+            string += f"[{self.bus[row][col]}]\t"
+            if i % 2 == 1:
+                string += "\n"
+        return string
+
+    def add(self, tourist: Tourist, seatNum: int):
+        if seatNum < 0 or seatNum > self.totalPossibleSpots:
+            raise RuntimeError(f"Seat number {seatNum} outside range of permissible seat options [{0}, "
+                               f"{self.totalPossibleSpots}]")
+        tourist.seatPositions.append(seatNum)
+        row, col = self.getRowAndCol(seatNum)
+        self.bus[row][col] = tourist
+
+    def get(self, seatNumber: int) -> Optional[Tourist]:
+        if seatNumber < 0 or seatNumber >= self.totalPossibleSpots:
+            raise RuntimeError(f"Seat number {seatNumber} outside range of permissible seat options [{0}, "
+                               f"{self.totalPossibleSpots}]")
+        row, col = self.getRowAndCol(seatNumber)
+        return self.bus[row][col]
+
+    def getRowAndCol(self, num):
+        row = num // SPOTS_PER_ROW
+        col = num % SPOTS_PER_ROW
+        return row, col
 
 
 class Tourbus(BusHelper):
@@ -57,7 +105,8 @@ class Tourbus(BusHelper):
         self.tourists = tourists
         self.numDays = numDays
         self.busDays = []
-        self.totalPossibleSpots = self.getTotalPossibleSpots(len(self.tourists))
+        self.totalPossibleSeats = self.getTotalPossibleSpots(len(self.tourists))
+        self.totalRows = self.totalPossibleSeats // 2
         self.projectedSeatScore = self.getProjectedSeatScore(len(self.tourists), self.numDays)
         self.SEAT_SCORE_TOLERANCE = 1
 
@@ -285,84 +334,169 @@ class Tourbus(BusHelper):
     def reorderTouristList(self):
         self.tourists = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore(), h.name))
 
-    # def fillSeatsForTrip2(self):
-    #     for dayNum in range(self.numDays):
-    #         self.fillSeatsForDay(dayNum, self.tourists)
-    #
-    # def fillSeatsForDay(self, dayNum: int, tourists: List[Tourist]):
-    #     bus = BusContainer(len(tourists))
-    #     ignoreRowClause = False
-    #     ignoreFairClause = False
-    #     ignoreNeighbourClause = False
-    #     ignoreOptimalClause = False
-    #     ignoreBestClause = False
-    #     for tourist in self.tourists:
-    #         seatFound = False
-    #         while not seatFound:
-    #             for seatNum in range(self.totalPossibleSpots):
-    #                 seat = bus.get(seatNum)
-    #                 if seat is not None:
-    #                     alreadySatInRow = tourist.alreadySatInRow(seatNum)
-    #                     seatScoreIsFair = self.checkIfSeatScoreIsFair(tourist, seatNum)
-    #                     if (not alreadySatInRow or ignoreRowClause) and \
-    #                             (seatScoreIsFair or ignoreFairClause) and \
-    #                             (hasNewNeighbours or ignoreNeighbourClause) and \
-    #                             (seatScoreIsOptimal or ignoreOptimalClause):
-    #                         bus.add(tourist, seatNum)
+    def fillSeatsForTrip2(self):
+        for dayNum in range(self.numDays):
+            self.fillSeatsForDay(dayNum, self.tourists)
+            self.reorderTouristList()
+        print(f"projected seat score: {self.projectedSeatScore}")
+        for tourist in self.tourists:
+            print(f"{tourist} score: {tourist.calculateTotalSeatScore()}")
 
-    def checkIfSeatScoreIsFair(self, tourist: Tourist, seatNum: int) -> bool:
+    def fillSeatsForDay(self, dayNum: int, tourists: List[Tourist]):
+        bus = BusContainer(len(tourists))
 
-        p = self.projectedSeatScore + self.SEAT_SCORE_TOLERANCE
-        s = self.calculateSeatScore(seatNum)
-        r = p - s
-        availableSeatScores = self.getAvailableSeatScores()
-        M = r - m
+        # ignoreOptimalClause = False
+        # ignoreBestClause = False
+        if dayNum == 0:
+            count = 0
+            for tourist in self.tourists:
+                bus.add(tourist, count)
+                count += 1
+        else:
+            for tourist in self.tourists:
+                ignoreRowClause = True
+                ignoreFairClause = False
+                ignoreNeighbourClause = False
+                neighbourThreshold = 3
+                seatFound = False
+                while not seatFound:
+                    for seatNum in range(self.totalPossibleSeats):
+                        seat = bus.get(seatNum)
+                        if seat is None:
+                            alreadySatInRow = tourist.alreadySatInRow(seatNum)
+                            seatScoreIsFair = self.seatScoreIsFair(tourist, seatNum)
+                            seatCloseToPreviousNeighbours = self.seatCloseToPreviousNeighbours(tourist, seatNum, bus,
+                                                                                               neighbourThreshold,
+                                                                                               dayNum)
+                            if ((not alreadySatInRow or ignoreRowClause) and
+                                    (seatScoreIsFair or ignoreFairClause) and
+                                    (not seatCloseToPreviousNeighbours or ignoreNeighbourClause)):
+                                    # (seatScoreIsOptimal or ignoreOptimalClause ):
+                                bus.add(tourist, seatNum)
+                                seatFound = True
+                                break
+                    if not seatFound:
+                        if not ignoreRowClause:
+                            ignoreRowClause = True
+                            # print(4)
+                        elif neighbourThreshold < 5:
+                            neighbourThreshold += 1
+                            # print(1)
+                        elif not ignoreNeighbourClause:
+                            ignoreNeighbourClause = True
+                            # print(2)
+                        elif not ignoreFairClause:
+                            ignoreFairClause = True
+                            # print(3)
+                        else:
+                            raise RuntimeError("Can't find a damn seat mate") #TODO
+        print(bus)
+        self.busDays.append(bus)
 
-        return
+
+
+    def seatScoreIsFair(self, tourist: Tourist, seatNum: int) -> bool:
+        seatScore = self.calculateSeatScore(seatNum)
+        remainingScoreAllowance = self.getRemainingScoreAllowance(tourist)
+
+        # Temporarily add this seat to tourist's list of seats to check if the seat is fair
+        tourist.seatPositions.append(seatNum)
+
+        optimisticSumOfRemainingScores = self.getOptimisticSumOfRemainingScores(tourist)
+
+        # remove temporarily added seat position
+        tourist.seatPositions.pop()
+
+        maxAllowableScoreToday = remainingScoreAllowance - optimisticSumOfRemainingScores
+        maxAllowableScoreToday = 0 if maxAllowableScoreToday < 0 else maxAllowableScoreToday
+        return seatScore <= maxAllowableScoreToday
+
+    def getRemainingScoreAllowance(self, tourist):
+        projectedWithTolerance = self.projectedSeatScore + self.SEAT_SCORE_TOLERANCE
+        remainingScoreAllowance = projectedWithTolerance - tourist.calculateTotalSeatScore()
+        return remainingScoreAllowance
+
+    def getOptimisticSumOfRemainingScores(self, tourist):
+        availableSeatScores = self.getAvailableSeatScores(tourist)
+        optimisticSumOfRemainingScores = 0
+        daysRemaining = self.numDays - len(tourist.seatPositions)  # TODO class variable for remaining days?
+        for _ in range(daysRemaining):
+            m = min(availableSeatScores)
+            index = availableSeatScores.index(m)
+            availableSeatScores.pop(index)
+            optimisticSumOfRemainingScores += m
+        return optimisticSumOfRemainingScores
 
     def getAvailableSeatScores(self, tourist: Tourist):
-        allowedRepeats = self.numDays / len()
+        allowedSeatingsPerRow = self.getAllowedSeatingsPerRow(tourist)
         totalPossibleSeatScores = []
-        for i in range(self.totalPossibleSpots):
-            if self.calculateSeatScore(i) not in totalPossibleSeatScores:
-                totalPossibleSeatScores.append(self.calculateSeatScore(i))
-        alreadyAttainedSeatScores = [self.calculateSeatScore(i) for i in tourist.seatPositions]
-        return [i for i in totalPossibleSeatScores if i not in alreadyAttainedSeatScores]
+        daysRemaining = self.numDays - len(tourist.seatPositions) #TODO class variable for remaining days?
+        for _ in range(daysRemaining):
+            for seat in range(self.totalPossibleSeats):
+                seatScore = self.calculateSeatScore(seat)
+                if allowedSeatingsPerRow[seatScore] > 0:
+                    totalPossibleSeatScores.append(seatScore)
+                    allowedSeatingsPerRow[seatScore] -= 1
+            if max(allowedSeatingsPerRow) == 0:
+                break
+        return totalPossibleSeatScores
 
-    def getAllowedRepeats(self):
-        return self.numDays // (self.totalPossibleSpots // 2)
+    def getAllowedSeatingsPerRow(self, tourist: Tourist) -> List[int]:
+        allowedRepeats = self.getAllowedRowRepeats()
+        rowsSatIn = [self.getRowAndCol(i)[0] for i in tourist.seatPositions]
+        allowedSeatingsPerRow = [allowedRepeats + 1 for _ in range(self.totalRows)]
+        for row in rowsSatIn:
+            try:
+                if allowedSeatingsPerRow[row] > 0:
+                    allowedSeatingsPerRow[row] -= 1
+            except IndexError:
+                raise RuntimeError(f"rowsSatIn contains invalid row {row}, max rows={self.totalRows}")
+        return allowedSeatingsPerRow
 
+    def getAllowedRowRepeats(self) -> int:
+        return (self.numDays - 1) // (self.totalPossibleSeats // 2)
 
+    def seatCloseToPreviousNeighbours(self, tourist: Tourist, seatNum: int, bus: BusContainer,
+                                      neighbourThreshold: int, dayNum: int) -> bool:
+        lowerRange = seatNum - 3
+        if lowerRange < 0:
+            lowerRange = 0
+        upperRange = seatNum + 3
+        if upperRange > self.totalPossibleSeats:
+            upperRange = self.totalPossibleSeats
+        for otherSeat in range(lowerRange, upperRange):
+            otherTourist = bus.get(otherSeat)
+            if otherTourist is not None and otherSeat != seatNum:
+                seatCloseness = self.getCloseNessFactor(seatNum, otherSeat)
+                prevSeat, otherPrevSeat = self.getPrevSeats(tourist, otherTourist, dayNum)
+                oldSeatCloseness = self.getCloseNessFactor(prevSeat, otherPrevSeat)
+                closenessFactor = seatCloseness + oldSeatCloseness
+                if closenessFactor > neighbourThreshold:
+                    return True
+        return False
 
-
-class BusContainer(BusHelper):
-
-    def __init__(self, numTourists):
-        self.totalPossibleSpots = ((numTourists + 1) // 2) * 2
-        rows = self.totalPossibleSpots // 2
-        self.bus = []
-        for i in range(rows):
-            self.bus.append([None] * SPOTS_PER_ROW)
-
-    def add(self, tourist: Tourist, seatNum: int):
-        if seatNum < 0 or seatNum > self.totalPossibleSpots:
-            raise RuntimeError(f"Seat number {seatNum} outside range of permissible seat options [{0}, "
-                               f"{self.totalPossibleSpots}]")
-        tourist.seatPositions.append(seatNum)
+    def getCloseNessFactor(self, seatNum: int, otherSeat: int) -> int:
         row, col = self.getRowAndCol(seatNum)
-        self.bus[row][col] = tourist
+        otherRow, otherCol = self.getRowAndCol(otherSeat)
+        if row == otherRow and col == otherCol:
+            return NeightbourClassification.SAME.value
+        elif otherRow == row:
+            return NeightbourClassification.BESIDE.value
+        elif otherCol == col and abs(row - otherRow) == 1:
+            return NeightbourClassification.VERTICAL.value
+        elif abs(row - otherRow) == 1 and abs(col - otherCol):
+            return NeightbourClassification.DIAGONAL.value
+        else:
+            return NeightbourClassification.OTHER.value
 
-    def get(self, seatNumber: int):
-        if seatNumber < 0 or seatNumber > self.totalPossibleSpots:
-            raise RuntimeError(f"Seat number {seatNumber} outside range of permissible seat options [{0}, "
-                               f"{self.totalPossibleSpots}]")
-        row, col = self.getRowAndCol(seatNumber)
-        return self.bus[row][col]
+    def getPrevSeats(self, tourist: Tourist, otherTourist: Tourist, dayNum: int):
+        try:
+            prevSeat = tourist.seatPositions[dayNum - 1]
+            otherPrevSeat = otherTourist.seatPositions[dayNum - 1]
+        except IndexError:
+            raise RuntimeError("No previous day for neighbours to be found")
+        return prevSeat, otherPrevSeat
 
-    def getRowAndCol(self, num):
-        row = num // SPOTS_PER_ROW
-        col = num % SPOTS_PER_ROW
-        return row, col
 
 
 
