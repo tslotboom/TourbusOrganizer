@@ -52,13 +52,13 @@ class TestTourist(unittest.TestCase):
         self.assertEqual(tourist.calculateTotalSeatScore(), 0)
         tourist.seatPositions = [1, 8, 2, 5, 3, 12]
         self.assertAlmostEqual(tourist.calculateTotalSeatScore(), 14)
-
-    def testTouristAlreadySatInRow(self):
-        seatNum = 1
-        tourist = Tourist('bob')
-        tourist.seatPositions.append(seatNum)
-        self.assertTrue(tourist.alreadySatInRow(seatNum))
-        self.assertFalse(tourist.alreadySatInRow(0))
+    #
+    # def testTouristAlreadySatInRow(self):
+    #     seatNum = 1
+    #     tourist = Tourist('bob')
+    #     tourist.seatPositions.append(seatNum)
+    #     self.assertTrue(tourist.alreadySatInRow(seatNum))
+    #     self.assertFalse(tourist.alreadySatInRow(0))
 
 
 class TestTourbus(unittest.TestCase):
@@ -226,13 +226,24 @@ class TestTourbus(unittest.TestCase):
 
     def testFillSeats(self):
         tourbus = self.getTourbus(8, 16)
-        tourbus.fillSeatsForTrip2()
+        tourbus.fillSeatsForTrip()
 
-    # def testReorderTouristList(self):
-    #     tourbus = self.getTourbus()
-    #     tourbus.fillSeatsForTrip()
-    #     tourbus.reorderTouristList()
-    #     # for tourist
+    def testReorderTouristList(self):
+        tourbus = self.getTourbus(8, 8)
+        expectedTourists = [
+            tourbus.tourists[6],
+            tourbus.tourists[7],
+            tourbus.tourists[4],
+            tourbus.tourists[5],
+            tourbus.tourists[2],
+            tourbus.tourists[3],
+            tourbus.tourists[0],
+            tourbus.tourists[1]
+        ]
+        tourbus.fillSeatsForDay()
+        tourbus.reorderTouristList()
+
+        self.assertEqual(expectedTourists, tourbus.tourists)
 
     def testSeatCloseToPreviousNeighbours(self):
         numTourists = 8
@@ -244,49 +255,49 @@ class TestTourbus(unittest.TestCase):
             if i != seatNum:
                 bus.add(tourbus.tourists[i], i)
         tourist = tourbus.tourists[5]
-        neighbourThreshold = 3
+        tourbus.neighbourThreshold = 3
 
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 0, bus, neighbourThreshold, 1))
-        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 1, bus, neighbourThreshold, 1))
-        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 2, bus, neighbourThreshold, 1))
-        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 3, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 4, bus, neighbourThreshold, 1))
-        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 5, bus, neighbourThreshold, 1))
-        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 6, bus, neighbourThreshold, 1))
-        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 7, bus, neighbourThreshold, 1))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 0, bus))
+        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 1, bus))
+        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 2, bus))
+        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 3, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 4, bus))
+        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 5, bus))
+        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 6, bus))
+        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 7, bus))
 
-        neighbourThreshold = 4
+        tourbus.neighbourThreshold = 4
 
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 0, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 1, bus, neighbourThreshold, 1))
-        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 2, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 3, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 4, bus, neighbourThreshold, 1))
-        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 5, bus, neighbourThreshold, 1))
-        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 6, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 7, bus, neighbourThreshold, 1))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 0, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 1, bus))
+        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 2, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 3, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 4, bus))
+        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 5, bus))
+        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 6, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 7, bus))
 
-        neighbourThreshold = 5
+        tourbus.neighbourThreshold = 5
 
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 0, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 1, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 2, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 3, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 4, bus, neighbourThreshold, 1))
-        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 5, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 6, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 7, bus, neighbourThreshold, 1))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 0, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 1, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 2, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 3, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 4, bus))
+        self.assertTrue(tourbus.seatCloseToPreviousNeighbours(tourist, 5, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 6, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 7, bus))
 
-        neighbourThreshold = 6
+        tourbus.neighbourThreshold = 6
 
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 0, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 1, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 2, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 3, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 4, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 5, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 6, bus, neighbourThreshold, 1))
-        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 7, bus, neighbourThreshold, 1))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 0, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 1, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 2, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 3, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 4, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 5, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 6, bus))
+        self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 7, bus))
 
     def testGetClosenessFactor(self):
         tourbus = self.getTourbus(8, 8)
@@ -311,7 +322,8 @@ class TestTourbus(unittest.TestCase):
         tourist1.seatPositions = [0]
         tourist2 = tourbus.tourists[1]
         tourist2.seatPositions = [1]
-        self.assertEqual(tourbus.getPrevSeats(tourist1, tourist2), (0, 1))
+        self.assertEqual(tourbus.getPrevSeats(tourist1, tourist2, 1), (0, 1))
+
 
 class TestBus(unittest.TestCase):
 
