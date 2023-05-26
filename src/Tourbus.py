@@ -279,6 +279,5 @@ class Tourbus(BusHelper):
     def reorderTouristList(self):
         self.tourists = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore(), h.name))
 
-
-
-
+    def getTourists(self) -> List[Tourist]:
+        return self.tourists
