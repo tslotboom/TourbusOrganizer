@@ -36,9 +36,10 @@ if __name__ == "__main__":
     workbook = createWorkbook("hello.xlsx")
     sheet = workbook.active
 
-    for i in range(len(tourists)):
+    for i in range(1, len(tourists) + 1):
         tourist = tourists[i]
         for j in range(len(tourist.seatPositions)):
             seat = tourist.seatPositions[j]
-            sheet[f"{getExcelCol(i)}{1}"] = tourist.name
+            key = f"{getExcelCol(i)}{j + 1}"
+            sheet[key] = tourist.name
             sheet[f"{getExcelCol(i)}{j + 2}"] = seat
