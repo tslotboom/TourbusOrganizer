@@ -4,12 +4,6 @@ from .Tourbus import Tourbus, Tourist
 import string
 
 
-def createWorkbook(path: str) -> Workbook:
-    workbook = Workbook()
-    workbook.save(path)
-    return workbook
-
-
 def getExcelCol(num: int):
     alphabet = string.ascii_uppercase
     numLetters = 26
@@ -23,23 +17,28 @@ def getExcelCol(num: int):
 
 if __name__ == "__main__":
     numTourists = 14
-    numDays = 8
+    numDays = 3
 
     tourbus = Tourbus([Tourist(str(i)) for i in range(numTourists)], numDays)
     tourbus.fillSeatsForTrip()
     tourbus.getTourists()
     tourists = tourbus.getTourists()
     tourists = sorted(tourists, key=lambda h: (h.seatPositions[0]))
-    for tourist in tourists:
-        print(f"{tourist} - {tourist.seatPositions}")
 
-    workbook = createWorkbook("hello.xlsx")
+    path = "tourbus.xlsx"
+    workbook = Workbook()
     sheet = workbook.active
 
-    for i in range(len(tourists)):
-        tourist = tourists[i]
-        for j in range(len(tourist.seatPositions)):
-            seat = tourist.seatPositions[j]
-            key = f"{getExcelCol(i + 1)}{j + 1}"
-            sheet[key] = tourist.name
-            sheet[f"{getExcelCol(i + 1)}{j + 2}"] = seat
+    sheet["A1"] = "Tourists"
+    for day in range(numDays):
+        sheet[f"{getExcelCol(day + 2)}1"] = f"Day {day + 1}"
+
+    for row in range(len(tourists)):
+        tourist = tourists[row]
+        excelRow = row + 2
+        sheet[f"A{excelRow}"] = tourist.name
+        for col in range(len(tourist.seatPositions)):
+            seat = tourist.seatPositions[col]
+            sheet[f"{getExcelCol(col + 2)}{excelRow}"] = seat
+
+    workbook.save(path)
