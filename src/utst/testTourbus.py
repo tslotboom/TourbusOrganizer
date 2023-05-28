@@ -117,6 +117,16 @@ class TestBus(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             bus.get(2)
 
+    def testYieldSeats(self):
+        bus = BusContainer(4)
+        tourists = [Tourist(str(i)) for i in range(0, 4)]
+        for i in range(len(tourists)):
+            bus.add(tourists[i], i)
+        count = 0
+        for seat in bus.yieldSeats():
+            self.assertEqual(seat, tourists[count])
+            count += 1
+
 
 class TestTourbus(unittest.TestCase):
 
@@ -356,6 +366,25 @@ class TestTourbus(unittest.TestCase):
         self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 6, bus))
         self.assertFalse(tourbus.seatCloseToPreviousNeighbours(tourist, 7, bus))
 
+    def testGetSeatRangeForNeighbours(self):
+        tourbus = self.getTourbus(8, 8)
+        seatRange = tourbus.seatRangeForNeighbours(0)
+        self.assertEqual(seatRange, range(0, 4))
+        seatRange = tourbus.seatRangeForNeighbours(1)
+        self.assertEqual(seatRange, range(0, 4))
+        seatRange = tourbus.seatRangeForNeighbours(2)
+        self.assertEqual(seatRange, range(0, 6))
+        seatRange = tourbus.seatRangeForNeighbours(3)
+        self.assertEqual(seatRange, range(0, 6))
+        seatRange = tourbus.seatRangeForNeighbours(4)
+        self.assertEqual(seatRange, range(2, 8))
+        seatRange = tourbus.seatRangeForNeighbours(5)
+        self.assertEqual(seatRange, range(2, 8))
+        seatRange = tourbus.seatRangeForNeighbours(6)
+        self.assertEqual(seatRange, range(4, 8))
+        seatRange = tourbus.seatRangeForNeighbours(7)
+        self.assertEqual(seatRange, range(4, 8))
+
     def testGetClosenessFactor(self):
         tourbus = self.getTourbus(8, 8)
 
@@ -386,3 +415,13 @@ class TestTourbus(unittest.TestCase):
         numDays = 5
         tourbus = self.getTourbus(numTourists, numDays)
         self.assertEqual(tourbus.getTourists(), tourbus.tourists)
+
+    def testFillSeatsOnDayZero(self):
+        tourbus = self.getTourbus(8, 8)
+        bus = BusContainer(len(tourbus.tourists))
+        tourbus.fillBusOnDayZero(bus)
+
+
+
+
+

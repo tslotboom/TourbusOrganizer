@@ -1,7 +1,4 @@
-import copy
-from typing import List, Tuple, Optional
-# import numpy as np
-from collections import OrderedDict
+from typing import List, Tuple, Optional, Generator
 from enum import Enum
 
 SPOTS_PER_ROW = 2
@@ -22,7 +19,7 @@ class BusHelper:
         col = num % SPOTS_PER_ROW
         return row, col
 
-    def calculateSeatScore(self, seatNum: int):
+    def calculateSeatScore(self, seatNum: int) -> int:
         return seatNum // SPOTS_PER_ROW
 
 
@@ -55,18 +52,19 @@ class Tourist(BusHelper):
 
 class BusContainer(BusHelper):
 
-    def __init__(self, numTourists):
+    def __init__(self, numTourists: int):
         self.totalPossibleSpots = ((numTourists + 1) // 2) * 2
         rows = self.totalPossibleSpots // 2
         self.bus = [[None, None] for _ in range(rows)]
 
     def __repr__(self) -> str:
         string = ""
-        for i in range(self.totalPossibleSpots):
-            row, col = self.getRowAndCol(i)
-            string += f"[{self.bus[row][col]}]\t"
+        i = 0
+        for seat in self.yieldSeats():
+            string += f"[{seat}]\t\t"
             if i % 2 == 1:
                 string += "\n"
+            i += 1
         return string
 
     def add(self, tourist: Tourist, seatNum: int):
@@ -84,10 +82,10 @@ class BusContainer(BusHelper):
         row, col = self.getRowAndCol(seatNumber)
         return self.bus[row][col]
 
-    def getRowAndCol(self, num):
-        row = num // SPOTS_PER_ROW
-        col = num % SPOTS_PER_ROW
-        return row, col
+    def yieldSeats(self) -> Generator[Optional[Tourist], None, None]:
+        for i in range(self.totalPossibleSpots):
+            seat = self.get(i)
+            yield seat
 
 
 class Tourbus(BusHelper):
@@ -113,7 +111,7 @@ class Tourbus(BusHelper):
         self.neighbourThreshold = 3
         self.dayNum = 0
 
-    def getTotalPossibleSeats(self, numTourists: int):
+    def getTotalPossibleSeats(self, numTourists: int) -> int:
         return ((numTourists + 1) // 2) * 2
 
     def getProjectedSeatScore(self, numTourists: int, numDays: int) -> float:
@@ -135,7 +133,13 @@ class Tourbus(BusHelper):
             self.fillBus(bus)
         self.busDays.append(bus)
 
-    def fillBus(self, bus):
+    def fillBusOnDayZero(self, bus: BusContainer):
+        count = 0
+        for tourist in self.tourists:
+            bus.add(tourist, count)
+            count += 1
+
+    def fillBus(self, bus: BusContainer):
         for tourist in self.tourists:
             ignoreRowClause = False
             ignoreFairClause = False
@@ -163,12 +167,6 @@ class Tourbus(BusHelper):
                     else:
                         raise RuntimeError("Can't find a damn seat. This error shouln")  # TODO
 
-    def fillBusOnDayZero(self, bus):
-        count = 0
-        for tourist in self.tourists:
-            bus.add(tourist, count)
-            count += 1
-
     def seatScoreIsFair(self, tourist: Tourist, seatNum: int) -> bool:
         seatScore = self.calculateSeatScore(seatNum)
         remainingScoreAllowance = self.getRemainingScoreAllowance(tourist)
@@ -185,14 +183,14 @@ class Tourbus(BusHelper):
         maxAllowableScoreToday = 0 if maxAllowableScoreToday < 0 else maxAllowableScoreToday
         return seatScore <= maxAllowableScoreToday
 
-    def getRemainingScoreAllowance(self, tourist):
+    def getRemainingScoreAllowance(self, tourist: Tourist) -> float:
         projectedWithTolerance = self.projectedSeatScore + self.seatScoreTolerance
         remainingScoreAllowance = projectedWithTolerance - tourist.calculateTotalSeatScore()
         if remainingScoreAllowance < 0:
             return 0
         return remainingScoreAllowance
 
-    def getOptimisticSumOfRemainingScores(self, tourist):
+    def getOptimisticSumOfRemainingScores(self, tourist: Tourist) -> int:
         availableSeatScores = self.getAvailableSeatScores(tourist)
         optimisticSumOfRemainingScores = 0
         daysRemaining = self.numDays - len(tourist.seatPositions)
@@ -203,13 +201,13 @@ class Tourbus(BusHelper):
             optimisticSumOfRemainingScores += m
         return optimisticSumOfRemainingScores
 
-    def getAvailableSeatScores(self, tourist: Tourist):
+    def getAvailableSeatScores(self, tourist: Tourist) -> List[int]:
         allowedSeatingsPerRow = self.getAllowedSeatingsPerRow(tourist)
         totalPossibleSeatScores = []
         daysRemaining = self.numDays - len(tourist.seatPositions)
         for _ in range(daysRemaining):
-            for seat in range(self.totalPossibleSeats):
-                seatScore = self.calculateSeatScore(seat)
+            for seatNum in range(self.totalPossibleSeats):
+                seatScore = self.calculateSeatScore(seatNum)
                 if allowedSeatingsPerRow[seatScore] > 0:
                     totalPossibleSeatScores.append(seatScore)
                     allowedSeatingsPerRow[seatScore] -= 1
@@ -233,8 +231,7 @@ class Tourbus(BusHelper):
         return (self.numDays - 1) // (self.totalPossibleSeats // 2)
 
     def seatCloseToPreviousNeighbours(self, tourist: Tourist, seatNum: int, bus: BusContainer) -> bool:
-        lowerRange, upperRange = self.getSeatRangeForNeighbours(seatNum)
-        for otherSeat in range(lowerRange, upperRange):
+        for otherSeat in self.seatRangeForNeighbours(seatNum):
             otherTourist = bus.get(otherSeat)
             if otherTourist is not None and otherSeat != seatNum:
                 seatCloseness = self.getCloseNessFactor(seatNum, otherSeat)
@@ -245,14 +242,16 @@ class Tourbus(BusHelper):
                     return True
         return False
 
-    def getSeatRangeForNeighbours(self, seatNum):
+    def seatRangeForNeighbours(self, seatNum: int) -> range:
+        if seatNum % 2 == 0:
+            seatNum += 1
         lowerRange = seatNum - 3
         if lowerRange < 0:
             lowerRange = 0
         upperRange = seatNum + 3
         if upperRange > self.totalPossibleSeats:
             upperRange = self.totalPossibleSeats
-        return lowerRange, upperRange
+        return range(lowerRange, upperRange)
 
     def getCloseNessFactor(self, seatNum: int, otherSeat: int) -> int:
         row, col = self.getRowAndCol(seatNum)
@@ -268,7 +267,7 @@ class Tourbus(BusHelper):
         else:
             return NeightbourClassification.OTHER.value
 
-    def getPrevSeats(self, tourist: Tourist, otherTourist: Tourist, dayNum: int):
+    def getPrevSeats(self, tourist: Tourist, otherTourist: Tourist, dayNum: int) -> Tuple[int, int]:
         try:
             prevSeat = tourist.seatPositions[dayNum - 1]
             otherPrevSeat = otherTourist.seatPositions[dayNum - 1]
