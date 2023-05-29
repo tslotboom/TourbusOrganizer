@@ -1,7 +1,10 @@
-from typing import List, Tuple, Optional, Generator
+from .Tourist import Tourist
+from .BusHelper import BusHelper
+from .BusContainer import BusContainer
+
+from typing import List, Tuple
 from enum import Enum
 
-SPOTS_PER_ROW = 2
 
 
 class NeightbourClassification(Enum):
@@ -10,82 +13,6 @@ class NeightbourClassification(Enum):
     VERTICAL = 2
     DIAGONAL = 1
     OTHER = 0
-
-
-class BusHelper:
-
-    def getRowAndCol(self, num: int) -> Tuple[int, int]:
-        row = num // SPOTS_PER_ROW
-        col = num % SPOTS_PER_ROW
-        return row, col
-
-    def calculateSeatScore(self, seatNum: int) -> int:
-        return seatNum // SPOTS_PER_ROW
-
-
-class Tourist(BusHelper):
-
-    def __init__(self, name: str):
-        self.name = name
-        self.seatPositions = []
-
-    def __repr__(self) -> str:
-        return self.name
-
-    def calculateTotalSeatScore(self) -> float:
-        if len(self.seatPositions) == 0:
-            return 0
-        else:
-            score = 0
-            for position in self.seatPositions:
-                score += self.calculateSeatScore(position)
-        return score
-
-    def alreadySatInRow(self, seatNum: int) -> bool:
-        row, col = self.getRowAndCol(seatNum)
-        for oldSeat in self.seatPositions:
-            oldRow, oldCol = self.getRowAndCol(oldSeat)
-            if row == oldRow:
-                return True
-        return False
-
-
-class BusContainer(BusHelper):
-
-    def __init__(self, numTourists: int):
-        self.totalPossibleSpots = ((numTourists + 1) // 2) * 2
-        rows = self.totalPossibleSpots // 2
-        self.bus = [[None, None] for _ in range(rows)]
-
-    def __repr__(self) -> str:
-        string = ""
-        i = 0
-        for seat in self.yieldSeats():
-            string += f"[{seat}]\t\t"
-            if i % 2 == 1:
-                string += "\n"
-            i += 1
-        return string
-
-    def add(self, tourist: Tourist, seatNum: int):
-        if seatNum < 0 or seatNum > self.totalPossibleSpots:
-            raise RuntimeError(f"Seat number {seatNum} outside range of permissible seat options [{0}, "
-                               f"{self.totalPossibleSpots}]")
-        tourist.seatPositions.append(seatNum)
-        row, col = self.getRowAndCol(seatNum)
-        self.bus[row][col] = tourist
-
-    def get(self, seatNumber: int) -> Optional[Tourist]:
-        if seatNumber < 0 or seatNumber >= self.totalPossibleSpots:
-            raise RuntimeError(f"Seat number {seatNumber} outside range of permissible seat options [{0}, "
-                               f"{self.totalPossibleSpots}]")
-        row, col = self.getRowAndCol(seatNumber)
-        return self.bus[row][col]
-
-    def yieldSeats(self) -> Generator[Optional[Tourist], None, None]:
-        for i in range(self.totalPossibleSpots):
-            seat = self.get(i)
-            yield seat
 
 
 class Tourbus(BusHelper):
@@ -165,7 +92,7 @@ class Tourbus(BusHelper):
                     elif not ignoreFairClause:
                         ignoreFairClause = True
                     else:
-                        raise RuntimeError("Can't find a damn seat. This error shouln")  # TODO
+                        raise RuntimeError("Can't find a damn seat. This error shouln't ever happen")  # TODO
 
     def seatScoreIsFair(self, tourist: Tourist, seatNum: int) -> bool:
         seatScore = self.calculateSeatScore(seatNum)
