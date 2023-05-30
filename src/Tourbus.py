@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from .Tourist import Tourist
 from .BusHelper import BusHelper
 from .BusContainer import BusContainer
@@ -92,7 +94,7 @@ class Tourbus(BusHelper):
                     elif not ignoreFairClause:
                         ignoreFairClause = True
                     else:
-                        raise RuntimeError("Can't find a damn seat. This error shouln't ever happen")  # TODO
+                        raise RuntimeError("Can't find a damn seat. This error shouldn't ever happen")  # TODO
 
     def seatScoreIsFair(self, tourist: Tourist, seatNum: int) -> bool:
         seatScore = self.calculateSeatScore(seatNum)
@@ -203,7 +205,50 @@ class Tourbus(BusHelper):
         return prevSeat, otherPrevSeat
 
     def reorderTouristList(self):
-        self.tourists = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore(), h.name))
+        newTouristList = []
+        groupIDs = OrderedDict()
+        noGroupIDs = []
+        for tourist in self.tourists:
+            if tourist.groupID is not None:
+                if tourist.groupID not in groupIDs:
+                    groupIDs[tourist.groupID] = []
+                groupIDs[tourist.groupID].append(tourist)
+            else:
+                noGroupIDs.append(tourist)
+
+        groupIDAvgSeatScores = OrderedDict().fromkeys(groupIDs.keys())
+
+        for key in groupIDAvgSeatScores.keys():
+            totalSeatScores = [i.calculateTotalSeatScore() for i in groupIDs[key]]
+            s = sum(totalSeatScores)
+            l = len(totalSeatScores)
+            groupIDAvgSeatScores[key] = s / l
+        print(groupIDAvgSeatScores.items())
+        # sort groupIDAvgSeatScores in order of descending seat scores, so the group of tourists with the worst seat
+        # scores are added to the list first.
+        groupIDAvgSeatScores = sorted(groupIDAvgSeatScores.items(), key=lambda x: x[1], reverse=True)
+        groupIDsSorted = OrderedDict()
+        for keyVal in groupIDAvgSeatScores:
+            groupIDsSorted[keyVal[0]] = groupIDs[keyVal[0]]
+        for groupID in groupIDsSorted.keys():
+            for tourist in groupIDsSorted[groupID]:
+                newTouristList.append(tourist)
+
+        noGroupIDs = sorted(noGroupIDs, key=lambda h: (-h.calculateTotalSeatScore(), h.name))
+        for tourist in noGroupIDs:
+            newTouristList.append(tourist)
+
+        self.tourists = newTouristList
+
+
+
+
+        # groupIDAvgSeatScores = OrderedDict(sorted(groupIDAvgSeatScores.items(), key=lambda item: item[1]))
+        # print(groupIDAvgSeatScores)
+
+
+
+        # self.tourists = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore(), h.name))
 
     def getTourists(self) -> List[Tourist]:
         return self.tourists

@@ -172,15 +172,21 @@ class TestTourbus(unittest.TestCase):
 
     def testReorderTouristList(self):
         tourbus = self.getTourbus(8, 8)
+        tourbus.tourists[0].groupID = 2
+        tourbus.tourists[1].groupID = 2
+        tourbus.tourists[2].groupID = 3
+        tourbus.tourists[3].groupID = 3
+        tourbus.tourists[4].groupID = 1
+        tourbus.tourists[5].groupID = 1
         expectedTourists = [
-            tourbus.tourists[6],
-            tourbus.tourists[7],
             tourbus.tourists[4],
             tourbus.tourists[5],
             tourbus.tourists[2],
             tourbus.tourists[3],
             tourbus.tourists[0],
-            tourbus.tourists[1]
+            tourbus.tourists[1],
+            tourbus.tourists[6],
+            tourbus.tourists[7]
         ]
         tourbus.fillSeatsForDay()
         tourbus.reorderTouristList()

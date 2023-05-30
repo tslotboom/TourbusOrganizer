@@ -1,11 +1,13 @@
 from .BusHelper import BusHelper
+from typing import Optional
 
 
 class Tourist(BusHelper):
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, groupID: Optional[int] = None):
         self.name = name
         self.seatPositions = []
+        self.groupID = groupID
 
     def __repr__(self) -> str:
         return self.name
@@ -26,4 +28,3 @@ class Tourist(BusHelper):
             if row == oldRow:
                 return True
         return False
-
