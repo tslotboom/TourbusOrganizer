@@ -7,7 +7,7 @@ from typing import Optional, Generator
 class BusContainer(BusHelper):
 
     def __init__(self, numTourists: int):
-        self.totalPossibleSpots = ((numTourists + 1) // 2) * 2
+        self.totalPossibleSpots = self.getTotalPossibleSeats(numTourists)
         rows = self.totalPossibleSpots // 2
         self.bus = [[None, None] for _ in range(rows)]
 
@@ -41,4 +41,11 @@ class BusContainer(BusHelper):
             seat = self.get(i)
             yield seat
 
-    # def iterateOverSeatsStartingFromIndex
+    def seatIsEmpty(self, seatNumber: int) -> bool:
+        return self.get(seatNumber) == None
+
+    def adjacentSeat(self, seatNumber: int) -> int:
+        if seatNumber % 2 == 0:
+            return seatNumber + 1
+        else:
+            return seatNumber - 1

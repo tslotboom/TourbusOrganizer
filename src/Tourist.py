@@ -8,6 +8,7 @@ class Tourist(BusHelper):
         self.name = name
         self.seatPositions = []
         self.groupID = groupID
+        self.seatingPriority = 0
 
     def __repr__(self) -> str:
         return self.name
@@ -28,3 +29,6 @@ class Tourist(BusHelper):
             if row == oldRow:
                 return True
         return False
+
+    def inGroup(self):
+        return self.groupID is not None

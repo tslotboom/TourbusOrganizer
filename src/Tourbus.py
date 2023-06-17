@@ -8,7 +8,6 @@ from typing import List, Tuple
 from enum import Enum
 
 
-
 class NeightbourClassification(Enum):
     SAME = 4
     BESIDE = 3
@@ -32,16 +31,14 @@ class Tourbus(BusHelper):
                 raise RuntimeError("Wrong data type for tourists list")
         self.tourists = tourists
         self.numDays = numDays
-        self.busDays = []
+        self.busHistory = []
         self.totalPossibleSeats = self.getTotalPossibleSeats(len(self.tourists))
         self.totalRows = self.totalPossibleSeats // 2
         self.projectedSeatScore = self.getProjectedSeatScore(len(self.tourists), self.numDays)
         self.seatScoreTolerance = 1
         self.neighbourThreshold = 3
         self.dayNum = 0
-
-    def getTotalPossibleSeats(self, numTourists: int) -> int:
-        return ((numTourists + 1) // 2) * 2
+        self.groupsSeated = []
 
     def getProjectedSeatScore(self, numTourists: int, numDays: int) -> float:
         maxSeatScorePerDay = (numTourists + 1) // 2 - 1
@@ -50,51 +47,117 @@ class Tourbus(BusHelper):
 
     def fillSeatsForTrip(self):
         for dayNum in range(self.numDays):
+            self.groupsSeated = []
             self.dayNum = dayNum
+            self.giveTouristsSeatingPriority()
+            self.reorderTouristListForGroups()
             self.fillSeatsForDay()
-            self.reorderTouristList()
 
-    def fillSeatsForDay(self):
+    def fillSeatsForDay(self) -> None:
         bus = BusContainer(len(self.tourists))
         if self.dayNum == 0:
             self.fillBusOnDayZero(bus)
         else:
             self.fillBus(bus)
-        self.busDays.append(bus)
+        self.busHistory.append(bus)
 
-    def fillBusOnDayZero(self, bus: BusContainer):
-        count = 0
+    def fillBusOnDayZero(self, bus: BusContainer) -> None:
         for tourist in self.tourists:
-            bus.add(tourist, count)
-            count += 1
+            if tourist.inGroup() and self.groupSeatedOnce(tourist.groupID):
+                self.seatGroupedTourist(bus, tourist)
+            else:
+                self.seatSingleTouristDayOne(bus, tourist)
 
-    def fillBus(self, bus: BusContainer):
+    def groupSeatedOnce(self, groupID: int) -> bool:
+        return groupID in self.groupsSeated
+
+    def seatGroupedTourist(self, bus: BusContainer, tourist: Tourist):
+        groupSeatNumbers = set()
+        self.getGroupSeatNumbers(bus, groupSeatNumbers, tourist)
+        seatFound = self.findSeatForGroupedTourist(bus, groupSeatNumbers, tourist)
+        if not seatFound:
+            if self.dayNum == 0:
+                self.seatSingleTouristDayOne(bus, tourist)
+            else:
+                self.seatSingleTourist(bus, tourist)
+
+    def getGroupSeatNumbers(self, bus, groupSeatNumbers, tourist):
+        for seatNum in range(self.totalPossibleSeats):
+            if not bus.seatIsEmpty(seatNum) and bus.get(seatNum).groupID == tourist.groupID:
+                groupSeatNumbers.add(seatNum)
+
+    def findSeatForGroupedTourist(self, bus, groupSeatNumbers, tourist):
+        seatFound = False
+        closenessFactors = [
+            NeightbourClassification.BESIDE.value,
+            NeightbourClassification.VERTICAL.value,
+            NeightbourClassification.DIAGONAL.value
+        ]
+        while not seatFound and len(closenessFactors) > 0:
+            closenessFactor = closenessFactors.pop(0)
+            for seatNum in range(self.totalPossibleSeats):
+                adjacentSeat = bus.adjacentSeat(seatNum)
+                if bus.seatIsEmpty(seatNum) and self.getCloseNessFactor(seatNum, adjacentSeat) == closenessFactor and \
+                        adjacentSeat in groupSeatNumbers:
+                    bus.add(tourist, seatNum)
+                    seatFound = True
+                    break
+        return seatFound
+
+    def seatSingleTouristDayOne(self, bus: BusContainer, tourist: Tourist) -> None:
+        seatFound = False
+        for seatNum in range(self.totalPossibleSeats):
+            if bus.seatIsEmpty(seatNum):
+                bus.add(tourist, seatNum)
+                if tourist.inGroup() and not self.groupSeatedOnce(tourist.groupID):
+                    self.groupsSeated.append(tourist.groupID)
+                seatFound = True
+                break
+        if not seatFound:
+            raise RuntimeError("ERROR: No seat found on first day")
+
+    def fillBus(self, bus: BusContainer) -> None:
         for tourist in self.tourists:
-            ignoreRowClause = False
-            ignoreFairClause = False
-            ignoreNeighbourClause = False
-            seatFound = False
-            while not seatFound:
-                for seatNum in range(self.totalPossibleSeats):
-                    seat = bus.get(seatNum)
-                    if (seat is None and
-                            (not tourist.alreadySatInRow(seatNum) or ignoreRowClause) and
-                            (self.seatScoreIsFair(tourist, seatNum) or ignoreFairClause) and
-                            (not self.seatCloseToPreviousNeighbours(tourist, seatNum, bus) or ignoreNeighbourClause)):
-                        bus.add(tourist, seatNum)
-                        seatFound = True
-                        break
-                if not seatFound:
-                    if not ignoreRowClause:
-                        ignoreRowClause = True
-                    elif self.neighbourThreshold < self.MAX_NEIGHBOUR_THRESHOLD:
-                        self.neighbourThreshold += 1
-                    elif not ignoreNeighbourClause:
-                        ignoreNeighbourClause = True
-                    elif not ignoreFairClause:
-                        ignoreFairClause = True
-                    else:
-                        raise RuntimeError("Can't find a damn seat. This error shouldn't ever happen")  # TODO
+            if tourist.inGroup() and self.groupSeatedOnce(tourist.groupID):
+                self.seatGroupedTourist(bus, tourist)
+            else:
+                self.seatSingleTourist(bus, tourist)
+
+    def seatSingleTourist(self, bus: BusContainer, tourist: Tourist):
+        ignoreRowClause = False
+        ignoreFairClause = False
+        ignoreNeighbourClause = False
+        seatFound = False
+        while not seatFound:
+            for seatNum in self.seatRangeForTourist(tourist):
+                if (bus.seatIsEmpty(seatNum) and
+                        (not tourist.alreadySatInRow(seatNum) or ignoreRowClause) and
+                        (self.seatScoreIsFair(tourist, seatNum) or ignoreFairClause) and
+                        (not self.seatCloseToPreviousNeighbours(tourist, seatNum, bus) or ignoreNeighbourClause)):
+                    bus.add(tourist, seatNum)
+                    seatFound = True
+                    if tourist.inGroup() and not self.groupSeatedOnce(tourist.groupID):
+                        self.groupsSeated.append(tourist.groupID)
+                    break
+            if not seatFound:
+                if not ignoreRowClause:
+                    ignoreRowClause = True
+                elif self.neighbourThreshold < self.MAX_NEIGHBOUR_THRESHOLD:
+                    self.neighbourThreshold += 1
+                elif not ignoreNeighbourClause:
+                    ignoreNeighbourClause = True
+                elif not ignoreFairClause:
+                    ignoreFairClause = True
+                else:
+                    raise RuntimeError("Can't find a damn seat. This error shouldn't ever happen")  # TODO
+
+    def seatRangeForTourist(self, tourist):
+        if tourist.seatingPriority > self.totalPossibleSeats or tourist.seatingPriority < 0:
+            raise RuntimeError(f"Invalid seating priority for tourist {tourist.name} {tourist.seatingPriority}")
+        for i in range(tourist.seatingPriority, self.totalPossibleSeats):
+            yield i
+        for i in range(0, tourist.seatingPriority):
+            yield i
 
     def seatScoreIsFair(self, tourist: Tourist, seatNum: int) -> bool:
         seatScore = self.calculateSeatScore(seatNum)
@@ -204,8 +267,25 @@ class Tourbus(BusHelper):
             raise RuntimeError("No previous day for neighbours to be found")
         return prevSeat, otherPrevSeat
 
-    def reorderTouristList(self):
+    def giveTouristsSeatingPriority(self):
+        self.tourists = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore(), h.name))
+        for i in range(len(self.tourists)):
+            self.tourists[i].seatingPriority = i
+
+    def reorderTouristListForGroups(self):
         newTouristList = []
+        groupIDs, noGroupIDs = self.separateTouristsByGroupOrNoGroup()
+
+        for groupID in groupIDs.keys():
+            for tourist in groupIDs[groupID]:
+                newTouristList.append(tourist)
+
+        for tourist in noGroupIDs:
+            newTouristList.append(tourist)
+
+        self.tourists = newTouristList
+
+    def separateTouristsByGroupOrNoGroup(self) -> Tuple[OrderedDict[int, List[Tourist]], List[Tourist]]:
         groupIDs = OrderedDict()
         noGroupIDs = []
         for tourist in self.tourists:
@@ -215,40 +295,16 @@ class Tourbus(BusHelper):
                 groupIDs[tourist.groupID].append(tourist)
             else:
                 noGroupIDs.append(tourist)
+        return groupIDs, noGroupIDs
 
+    def getGroupIDAvgSeatScores(self, groupIDs) -> OrderedDict[int, float]:
         groupIDAvgSeatScores = OrderedDict().fromkeys(groupIDs.keys())
-
         for key in groupIDAvgSeatScores.keys():
             totalSeatScores = [i.calculateTotalSeatScore() for i in groupIDs[key]]
             s = sum(totalSeatScores)
             l = len(totalSeatScores)
             groupIDAvgSeatScores[key] = s / l
-        print(groupIDAvgSeatScores.items())
-        # sort groupIDAvgSeatScores in order of descending seat scores, so the group of tourists with the worst seat
-        # scores are added to the list first.
-        groupIDAvgSeatScores = sorted(groupIDAvgSeatScores.items(), key=lambda x: x[1], reverse=True)
-        groupIDsSorted = OrderedDict()
-        for keyVal in groupIDAvgSeatScores:
-            groupIDsSorted[keyVal[0]] = groupIDs[keyVal[0]]
-        for groupID in groupIDsSorted.keys():
-            for tourist in groupIDsSorted[groupID]:
-                newTouristList.append(tourist)
-
-        noGroupIDs = sorted(noGroupIDs, key=lambda h: (-h.calculateTotalSeatScore(), h.name))
-        for tourist in noGroupIDs:
-            newTouristList.append(tourist)
-
-        self.tourists = newTouristList
-
-
-
-
-        # groupIDAvgSeatScores = OrderedDict(sorted(groupIDAvgSeatScores.items(), key=lambda item: item[1]))
-        # print(groupIDAvgSeatScores)
-
-
-
-        # self.tourists = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore(), h.name))
+        return groupIDAvgSeatScores
 
     def getTourists(self) -> List[Tourist]:
         return self.tourists

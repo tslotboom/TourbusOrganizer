@@ -28,3 +28,9 @@ class TestTourist(unittest.TestCase):
         self.assertTrue(tourist.alreadySatInRow(seatNum))
         self.assertTrue(tourist.alreadySatInRow(0))
         self.assertFalse(tourist.alreadySatInRow(2))
+
+    def testInGroup(self):
+        tourist = Tourist('bob')
+        self.assertFalse(tourist.inGroup())
+        tourist.groupID = 2
+        self.assertTrue(tourist.inGroup())

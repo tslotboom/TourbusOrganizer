@@ -33,3 +33,12 @@ class TestBusHelper(unittest.TestCase):
         self.assertEqual(busHelper.calculateSeatScore(5), 2)
         self.assertEqual(busHelper.calculateSeatScore(6), 3)
         self.assertEqual(busHelper.calculateSeatScore(7), 3)
+
+    def testGetTotalPossibleSeats(self):
+        busHelper = BusHelper()
+        self.assertEqual(busHelper.getTotalPossibleSeats(1), 2)
+        self.assertEqual(busHelper.getTotalPossibleSeats(2), 2)
+        self.assertEqual(busHelper.getTotalPossibleSeats(3), 4)
+        self.assertEqual(busHelper.getTotalPossibleSeats(4), 4)
+        self.assertEqual(busHelper.getTotalPossibleSeats(5), 6)
+        self.assertEqual(busHelper.getTotalPossibleSeats(6), 6)

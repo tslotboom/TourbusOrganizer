@@ -69,3 +69,19 @@ class TestBus(unittest.TestCase):
             self.assertEqual(seat, tourists[count])
             count += 1
 
+    def testSeatIsEmpty(self):
+        bus = BusContainer(4)
+        bus.add(Tourist('bob'), 0)
+        bus.add(Tourist('bob'), 1)
+        self.assertFalse(bus.seatIsEmpty(0))
+        self.assertFalse(bus.seatIsEmpty(1))
+        self.assertTrue(bus.seatIsEmpty(2))
+        self.assertTrue(bus.seatIsEmpty(3))
+
+    def testGetAdjacentSeat(self):
+        bus = BusContainer(4)
+        self.assertEqual(bus.adjacentSeat(0), 1)
+        self.assertEqual(bus.adjacentSeat(1), 0)
+        self.assertEqual(bus.adjacentSeat(2), 3)
+        self.assertEqual(bus.adjacentSeat(3), 2)
+

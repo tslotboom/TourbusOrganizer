@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import Mock, call
 from ..Tourbus import NeightbourClassification, Tourist, Tourbus, BusContainer
 from typing import List
 
@@ -35,6 +36,39 @@ class TestTourbus(unittest.TestCase):
         self.assertEqual(tourbus.getProjectedSeatScore(8, 3), 4.5)
         self.assertEqual(tourbus.getProjectedSeatScore(8, 4), 6)
         self.assertEqual(tourbus.getProjectedSeatScore(14, 3), 9)
+
+    def testSeatRangeForTourist(self):
+        tourbus = self.getTourbus(8, 8)
+        tourist = tourbus.tourists[0]
+        expectedRange = [0, 1, 2, 3, 4, 5, 6, 7]
+        for i in tourbus.seatRangeForTourist(tourist):
+            self.assertEqual(i, expectedRange.pop(0))
+
+        tourist.seatingPriority = 4
+        expectedRange = [4, 5, 6, 7, 0, 1, 2, 3]
+        for i in tourbus.seatRangeForTourist(tourist):
+            self.assertEqual(i, expectedRange.pop(0))
+
+        tourist.seatingPriority = 7
+        expectedRange = [7, 0, 1, 2, 3, 4, 5, 6]
+        for i in tourbus.seatRangeForTourist(tourist):
+            self.assertEqual(i, expectedRange.pop(0))
+
+        tourist.seatingPriority = 8
+        expectedRange = [0, 1, 2, 3, 4, 5, 6, 7]
+        for i in tourbus.seatRangeForTourist(tourist):
+            self.assertEqual(i, expectedRange.pop(0))
+        with self.assertRaises(RuntimeError):
+            expectedRange = [0, 1, 2, 3, 4, 5, 6, 7]
+            tourist.seatingPriority = 30
+            tourbus.seatRangeForTourist(tourist)
+            for i in tourbus.seatRangeForTourist(tourist):
+                self.assertEqual(i, expectedRange.pop(0))
+        with self.assertRaises(RuntimeError):
+            expectedRange = [0, 1, 2, 3, 4, 5, 6, 7]
+            tourist.seatingPriority = -1
+            for i in tourbus.seatRangeForTourist(tourist):
+                self.assertEqual(i, expectedRange.pop(0))
 
     def testGetAvailableScores(self):
         self.helpTestGetAvailableScores(1, 1, [], [0])
@@ -166,11 +200,102 @@ class TestTourbus(unittest.TestCase):
         tourist.seatPositions = seatPositions
         self.assertEqual(expectedO, tourbus.getOptimisticSumOfRemainingScores(tourist))
 
-    def testFillSeats(self):
+    def testFillBusOnDayOne(self):
+        tourbus = self.getTourbus(8, 8)
+        bus = BusContainer(8)
+        tourbus.tourists[0].groupID = 0
+        tourbus.tourists[1].groupID = 0
+        tourbus.tourists[2].groupID = 0
+        tourbus.tourists[3].groupID = 0
+
+        tourbus.seatGroupedTourist = Mock()
+
+        tourbus.seatSingleTouristDayOne = Mock()
+        tourbus.seatSingleTouristDayOne.side_effect = [tourbus.groupsSeated.append(0)] + [None] * 4
+
+        tourbus.fillBusOnDayZero(bus)
+
+        self.assertEqual(tourbus.seatGroupedTourist.call_count, 3)
+        self.assertEqual(tourbus.seatSingleTouristDayOne.call_count, 5)
+
+
+    #
+    # def testGroupSeatedOnce(self):
+    #
+    # def testSeatSingleTouristDayOne(self):
+    #
+    # def testSeatGroupedTourist(self):
+    #
+    # def testGetGroupSeatNumbers(self):
+    #
+    # def testFindSeatForGroupedTourist(self):
+    #
+    # def testSeatSingleTouristDayOne(self):
+    #
+    # def testSeatSingleTourist(self):
+
+    def testFillSeatsForTrip(self):
         tourbus = self.getTourbus(8, 16)
         tourbus.fillSeatsForTrip()
 
     def testReorderTouristList(self):
+        tourbus = self.getTourbus(8, 8)
+        expectedTourists = [
+            tourbus.tourists[6],
+            tourbus.tourists[7],
+            tourbus.tourists[4],
+            tourbus.tourists[5],
+            tourbus.tourists[2],
+            tourbus.tourists[3],
+            tourbus.tourists[0],
+            tourbus.tourists[1]
+        ]
+        tourbus.fillSeatsForDay()
+        tourbus.reorderTouristListForGroups()
+        self.assertEqual(expectedTourists, tourbus.tourists)
+
+        tourbus = self.getTourbus(8, 8)
+        tourbus.tourists[0].groupID = 2
+        tourbus.tourists[1].groupID = 2
+        tourbus.tourists[2].groupID = 2
+        expectedTourists = [
+            tourbus.tourists[2],
+            tourbus.tourists[0],
+            tourbus.tourists[1],
+            tourbus.tourists[6],
+            tourbus.tourists[7],
+            tourbus.tourists[4],
+            tourbus.tourists[5],
+            tourbus.tourists[3]
+        ]
+        tourbus.fillSeatsForDay()
+
+        tourbus.reorderTouristListForGroups()
+        self.assertEqual(expectedTourists, tourbus.tourists)
+
+        tourbus = self.getTourbus(8, 8)
+        tourbus.tourists[0].groupID = 2
+        tourbus.tourists[1].groupID = 2
+        tourbus.tourists[2].groupID = 2
+        tourbus.tourists[3].groupID = 2
+        tourbus.tourists[4].groupID = 2
+        tourbus.tourists[5].groupID = 2
+        tourbus.tourists[6].groupID = 2
+        tourbus.tourists[7].groupID = 2
+        expectedTourists = [
+            tourbus.tourists[6],
+            tourbus.tourists[7],
+            tourbus.tourists[4],
+            tourbus.tourists[5],
+            tourbus.tourists[2],
+            tourbus.tourists[3],
+            tourbus.tourists[0],
+            tourbus.tourists[1]
+        ]
+        tourbus.fillSeatsForDay()
+        tourbus.reorderTouristListForGroups()
+        self.assertEqual(expectedTourists, tourbus.tourists)
+
         tourbus = self.getTourbus(8, 8)
         tourbus.tourists[0].groupID = 2
         tourbus.tourists[1].groupID = 2
@@ -189,9 +314,32 @@ class TestTourbus(unittest.TestCase):
             tourbus.tourists[7]
         ]
         tourbus.fillSeatsForDay()
-        tourbus.reorderTouristList()
-
+        tourbus.reorderTouristListForGroups()
         self.assertEqual(expectedTourists, tourbus.tourists)
+
+    def testSeparateTouristsByGroupOrNoGroup(self):
+        tourbus = self.getTourbus(8, 8)
+        groupIDs, noGroupIDs = tourbus.separateTouristsByGroupOrNoGroup()
+        self.assertEqual(len(groupIDs), 0)
+        self.assertEqual(noGroupIDs, tourbus.tourists)
+
+        tourbus = self.getTourbus(8, 8)
+        for tourist in tourbus.tourists:
+            tourist.groupID = 1
+        groupIDs, noGroupIDs = tourbus.separateTouristsByGroupOrNoGroup()
+        self.assertEqual(groupIDs[1], tourbus.tourists)
+        self.assertEqual(len(noGroupIDs), 0)
+
+        tourbus = self.getTourbus(8, 8)
+        tourbus.tourists[0].groupID = 1
+        tourbus.tourists[1].groupID = 1
+        tourbus.tourists[2].groupID = 2
+        tourbus.tourists[3].groupID = 2
+        tourbus.tourists[4].groupID = 2
+        groupIDs, noGroupIDs = tourbus.separateTouristsByGroupOrNoGroup()
+        self.assertEqual(groupIDs[1], [tourbus.tourists[0], tourbus.tourists[1]])
+        self.assertEqual(groupIDs[2], [tourbus.tourists[2], tourbus.tourists[3], tourbus.tourists[4]])
+        self.assertEqual(noGroupIDs, [tourbus.tourists[5], tourbus.tourists[6], tourbus.tourists[7]])
 
     def testSeatCloseToPreviousNeighbours(self):
         numTourists = 8
@@ -290,6 +438,13 @@ class TestTourbus(unittest.TestCase):
         tourist2 = tourbus.tourists[1]
         tourist2.seatPositions = [1]
         self.assertEqual(tourbus.getPrevSeats(tourist1, tourist2, 1), (0, 1))
+
+    def testGiveTouristsSeatingPriority(self):
+        tourbus = self.getTourbus(8, 8)
+        tourbus.fillSeatsForDay()
+        tourbus.giveTouristsSeatingPriority()
+        for i in range(len(tourbus.tourists)):
+            self.assertEqual(tourbus.tourists[i].seatingPriority, i)
 
     def testGetTourists(self):
         numTourists = 5
