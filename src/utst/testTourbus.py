@@ -202,26 +202,32 @@ class TestTourbus(unittest.TestCase):
 
     def testFillBusOnDayOne(self):
         tourbus = self.getTourbus(8, 8)
+        groupID = 0
         bus = BusContainer(8)
-        tourbus.tourists[0].groupID = 0
-        tourbus.tourists[1].groupID = 0
-        tourbus.tourists[2].groupID = 0
-        tourbus.tourists[3].groupID = 0
+        tourbus.tourists[0].groupID = groupID
+        tourbus.tourists[1].groupID = groupID
+        tourbus.tourists[2].groupID = groupID
+        tourbus.tourists[3].groupID = groupID
 
         tourbus.seatGroupedTourist = Mock()
 
-        tourbus.seatSingleTouristDayOne = Mock()
-        tourbus.seatSingleTouristDayOne.side_effect = [tourbus.groupsSeated.append(0)] + [None] * 4
+        def side_effect(bus, tourist):
+            if groupID not in tourbus.groupsSeated:
+                tourbus.groupsSeated.append(groupID)
 
-        tourbus.fillBusOnDayZero(bus)
+        tourbus.seatSingleTouristDayOne = Mock()
+        tourbus.seatSingleTouristDayOne.side_effect = side_effect
+
+        tourbus.fillBusOnDayOne(bus)
 
         self.assertEqual(tourbus.seatGroupedTourist.call_count, 3)
         self.assertEqual(tourbus.seatSingleTouristDayOne.call_count, 5)
 
 
-    #
-    # def testGroupSeatedOnce(self):
-    #
+
+    def testGroupSeatedOnce(self):
+
+
     # def testSeatSingleTouristDayOne(self):
     #
     # def testSeatGroupedTourist(self):
@@ -455,7 +461,7 @@ class TestTourbus(unittest.TestCase):
     def testFillSeatsOnDayZero(self):
         tourbus = self.getTourbus(8, 8)
         bus = BusContainer(len(tourbus.tourists))
-        tourbus.fillBusOnDayZero(bus)
+        tourbus.fillBusOnDayOne(bus)
 
 
 

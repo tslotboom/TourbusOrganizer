@@ -56,12 +56,12 @@ class Tourbus(BusHelper):
     def fillSeatsForDay(self) -> None:
         bus = BusContainer(len(self.tourists))
         if self.dayNum == 0:
-            self.fillBusOnDayZero(bus)
+            self.fillBusOnDayOne(bus)
         else:
             self.fillBus(bus)
         self.busHistory.append(bus)
 
-    def fillBusOnDayZero(self, bus: BusContainer) -> None:
+    def fillBusOnDayOne(self, bus: BusContainer) -> None:
         for tourist in self.tourists:
             if tourist.inGroup() and self.groupSeatedOnce(tourist.groupID):
                 self.seatGroupedTourist(bus, tourist)
