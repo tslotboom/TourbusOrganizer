@@ -4,11 +4,16 @@ from typing import Optional
 
 class Tourist(BusHelper):
 
-    def __init__(self, name: str, groupID: Optional[int] = None):
+    def __init__(self, name: str, groupID: Optional[int] = None, seatPositions=None):
         self.name = name
-        self.seatPositions = []
         self.groupID = groupID
         self.seatingPriority = 0
+        if seatPositions is None:
+            self.seatPositions = []
+        else:
+            self.seatPositions = seatPositions
+        self.leftSeatings = 0
+        self.rightSeatings = 0
 
     def __repr__(self) -> str:
         return self.name

@@ -16,3 +16,6 @@ class BusHelper:
 
     def getTotalPossibleSeats(self, numTourists: int) -> int:
         return ((numTourists + 1) // 2) * 2
+
+    def seatIsInBackRow(self, seatNum: int, totalPossibleSpots: int) -> bool:
+        return seatNum >= totalPossibleSpots - 2

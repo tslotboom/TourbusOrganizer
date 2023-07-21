@@ -10,6 +10,8 @@ class BusContainer(BusHelper):
         self.totalPossibleSpots = self.getTotalPossibleSeats(numTourists)
         rows = self.totalPossibleSpots // 2
         self.bus = [[None, None] for _ in range(rows)]
+        self.oddNumOfTourists = numTourists % 2 == 1
+        self.backRowSeated = False
 
     def __repr__(self) -> str:
         string = ""
@@ -22,12 +24,18 @@ class BusContainer(BusHelper):
         return string
 
     def add(self, tourist: Tourist, seatNum: int):
-        if seatNum < 0 or seatNum > self.totalPossibleSpots:
+        if seatNum < 0 or seatNum >= self.totalPossibleSpots:
             raise RuntimeError(f"Seat number {seatNum} outside range of permissible seat options [{0}, "
                                f"{self.totalPossibleSpots}]")
         tourist.seatPositions.append(seatNum)
         row, col = self.getRowAndCol(seatNum)
         self.bus[row][col] = tourist
+        if self.oddNumOfTourists and self.seatIsInBackRow(seatNum, self.totalPossibleSpots):
+            self.backRowSeated = True
+        if seatNum % 2 == 0:
+            tourist.leftSeatings += 1
+        else:
+            tourist.rightSeatings += 1
 
     def get(self, seatNumber: int) -> Optional[Tourist]:
         if seatNumber < 0 or seatNumber >= self.totalPossibleSpots:

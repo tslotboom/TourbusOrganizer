@@ -127,27 +127,36 @@ class Tourbus(BusHelper):
         ignoreRowClause = False
         ignoreFairClause = False
         ignoreNeighbourClause = False
+        ignoreLeftRightClause = False
+        ignoreBackSeatClause = False
         seatFound = False
         while not seatFound:
             for seatNum in self.seatRangeForTourist(tourist):
                 if (bus.seatIsEmpty(seatNum) and
                         (not tourist.alreadySatInRow(seatNum) or ignoreRowClause) and
                         (self.seatScoreIsFair(tourist, seatNum) or ignoreFairClause) and
-                        (not self.seatCloseToPreviousNeighbours(tourist, seatNum, bus) or ignoreNeighbourClause)):
+                        (not self.seatCloseToPreviousNeighbours(tourist, seatNum, bus) or ignoreNeighbourClause) and
+                        (self.seatIsOnCorrectSide(tourist, seatNum) or ignoreLeftRightClause) and
+                        (not self.seatIsInBackRow(seatNum, self.totalPossibleSeats) or
+                            (not bus.backRowSeated) or ignoreBackSeatClause)):
                     bus.add(tourist, seatNum)
                     seatFound = True
                     if tourist.inGroup() and not self.groupSeatedOnce(tourist.groupID):
                         self.groupsSeated.append(tourist.groupID)
                     break
             if not seatFound:
-                if not ignoreRowClause:
-                    ignoreRowClause = True
+                if not ignoreLeftRightClause:
+                    ignoreLeftRightClause = True
                 elif self.neighbourThreshold < self.MAX_NEIGHBOUR_THRESHOLD:
                     self.neighbourThreshold += 1
                 elif not ignoreNeighbourClause:
                     ignoreNeighbourClause = True
                 elif not ignoreFairClause:
                     ignoreFairClause = True
+                elif not ignoreRowClause:
+                    ignoreRowClause = True
+                elif not ignoreBackSeatClause:
+                    ignoreBackSeatClause = True
                 else:
                     raise RuntimeError("Can't find a damn seat. This error shouldn't ever happen")  # TODO
 
@@ -306,5 +315,18 @@ class Tourbus(BusHelper):
             groupIDAvgSeatScores[key] = s / l
         return groupIDAvgSeatScores
 
+    def seatIsOnCorrectSide(self, tourist: Tourist, seatNum: int) -> bool:
+        left = seatNum % 2 == 0
+        if left and tourist.leftSeatings <= tourist.rightSeatings or \
+                not left and tourist.rightSeatings <= tourist.leftSeatings:
+            return True
+
+
+
     def getTourists(self) -> List[Tourist]:
         return self.tourists
+
+    def addOneToAllSeats(self):
+        for tourist in self.tourists:
+            for i in range(len(tourist.seatPositions)):
+                tourist.seatPositions[i] += 1
