@@ -200,35 +200,31 @@ class TestTourbus(unittest.TestCase):
         tourist.seatPositions = seatPositions
         self.assertEqual(expectedO, tourbus.getOptimisticSumOfRemainingScores(tourist))
 
-    def testFillBusOnDayOne(self):
-        tourbus = self.getTourbus(8, 8)
-        groupID = 0
-        bus = BusContainer(8)
-        tourbus.tourists[0].groupID = groupID
-        tourbus.tourists[1].groupID = groupID
-        tourbus.tourists[2].groupID = groupID
-        tourbus.tourists[3].groupID = groupID
+    # def testFillBusOnDayOne(self):
+    #     tourbus = self.getTourbus(8, 8)
+    #     groupID = 0
+    #     bus = BusContainer(8)
+    #     tourbus.tourists[0].groupID = groupID
+    #     tourbus.tourists[1].groupID = groupID
+    #     tourbus.tourists[2].groupID = groupID
+    #     tourbus.tourists[3].groupID = groupID
+    #
+    #     tourbus.seatGroupedTourist = Mock()
+    #
+    #     def side_effect(bus, tourist):
+    #         if groupID not in tourbus.groupsSeated:
+    #             tourbus.groupsSeated.append(groupID)
+    #
+    #     tourbus.seatSingleTouristDayOne = Mock()
+    #     tourbus.seatSingleTouristDayOne.side_effect = side_effect
+    #
+    #     tourbus.fillBusOnDayOne(bus)
+    #
+    #     self.assertEqual(tourbus.seatGroupedTourist.call_count, 3)
+    #     self.assertEqual(tourbus.seatSingleTouristDayOne.call_count, 5)
 
-        tourbus.seatGroupedTourist = Mock()
-
-        def side_effect(bus, tourist):
-            if groupID not in tourbus.groupsSeated:
-                tourbus.groupsSeated.append(groupID)
-
-        tourbus.seatSingleTouristDayOne = Mock()
-        tourbus.seatSingleTouristDayOne.side_effect = side_effect
-
-        tourbus.fillBusOnDayOne(bus)
-
-        self.assertEqual(tourbus.seatGroupedTourist.call_count, 3)
-        self.assertEqual(tourbus.seatSingleTouristDayOne.call_count, 5)
-
-
-
-    def testGroupSeatedOnce(self):
-
-
-    # def testSeatSingleTouristDayOne(self):
+    # def testGroupSeatedOnce(self):
+    #
     #
     # def testSeatGroupedTourist(self):
     #
@@ -236,7 +232,6 @@ class TestTourbus(unittest.TestCase):
     #
     # def testFindSeatForGroupedTourist(self):
     #
-    # def testSeatSingleTouristDayOne(self):
     #
     # def testSeatSingleTourist(self):
 
@@ -257,6 +252,7 @@ class TestTourbus(unittest.TestCase):
             tourbus.tourists[1]
         ]
         tourbus.fillSeatsForDay()
+        tourbus.giveTouristsSeatingPriority()
         tourbus.reorderTouristListForGroups()
         self.assertEqual(expectedTourists, tourbus.tourists)
 
@@ -276,6 +272,7 @@ class TestTourbus(unittest.TestCase):
         ]
         tourbus.fillSeatsForDay()
 
+        tourbus.giveTouristsSeatingPriority()
         tourbus.reorderTouristListForGroups()
         self.assertEqual(expectedTourists, tourbus.tourists)
 
@@ -299,6 +296,7 @@ class TestTourbus(unittest.TestCase):
             tourbus.tourists[1]
         ]
         tourbus.fillSeatsForDay()
+        tourbus.giveTouristsSeatingPriority()
         tourbus.reorderTouristListForGroups()
         self.assertEqual(expectedTourists, tourbus.tourists)
 
@@ -320,6 +318,7 @@ class TestTourbus(unittest.TestCase):
             tourbus.tourists[7]
         ]
         tourbus.fillSeatsForDay()
+        tourbus.giveTouristsSeatingPriority()
         tourbus.reorderTouristListForGroups()
         self.assertEqual(expectedTourists, tourbus.tourists)
 
@@ -457,11 +456,6 @@ class TestTourbus(unittest.TestCase):
         numDays = 5
         tourbus = self.getTourbus(numTourists, numDays)
         self.assertEqual(tourbus.getTourists(), tourbus.tourists)
-
-    def testFillSeatsOnDayZero(self):
-        tourbus = self.getTourbus(8, 8)
-        bus = BusContainer(len(tourbus.tourists))
-        tourbus.fillBusOnDayOne(bus)
 
 
 

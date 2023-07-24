@@ -55,18 +55,15 @@ class Tourbus(BusHelper):
 
     def fillSeatsForDay(self) -> None:
         bus = BusContainer(len(self.tourists))
-        if self.dayNum == 0:
-            self.fillBusOnDayOne(bus)
-        else:
-            self.fillBus(bus)
+        self.fillBus(bus)
         self.busHistory.append(bus)
 
-    def fillBusOnDayOne(self, bus: BusContainer) -> None:
+    def fillBus(self, bus: BusContainer) -> None:
         for tourist in self.tourists:
             if tourist.inGroup() and self.groupSeatedOnce(tourist.groupID):
                 self.seatGroupedTourist(bus, tourist)
             else:
-                self.seatSingleTouristDayOne(bus, tourist)
+                self.seatSingleTourist(bus, tourist)
 
     def groupSeatedOnce(self, groupID: int) -> bool:
         return groupID in self.groupsSeated
@@ -76,10 +73,7 @@ class Tourbus(BusHelper):
         self.getGroupSeatNumbers(bus, groupSeatNumbers, tourist)
         seatFound = self.findSeatForGroupedTourist(bus, groupSeatNumbers, tourist)
         if not seatFound:
-            if self.dayNum == 0:
-                self.seatSingleTouristDayOne(bus, tourist)
-            else:
-                self.seatSingleTourist(bus, tourist)
+            self.seatSingleTourist(bus, tourist)
 
     def getGroupSeatNumbers(self, bus, groupSeatNumbers, tourist):
         for seatNum in range(self.totalPossibleSeats):
@@ -104,25 +98,6 @@ class Tourbus(BusHelper):
                     break
         return seatFound
 
-    def seatSingleTouristDayOne(self, bus: BusContainer, tourist: Tourist) -> None:
-        seatFound = False
-        for seatNum in range(self.totalPossibleSeats):
-            if bus.seatIsEmpty(seatNum):
-                bus.add(tourist, seatNum)
-                if tourist.inGroup() and not self.groupSeatedOnce(tourist.groupID):
-                    self.groupsSeated.append(tourist.groupID)
-                seatFound = True
-                break
-        if not seatFound:
-            raise RuntimeError("ERROR: No seat found on first day")
-
-    def fillBus(self, bus: BusContainer) -> None:
-        for tourist in self.tourists:
-            if tourist.inGroup() and self.groupSeatedOnce(tourist.groupID):
-                self.seatGroupedTourist(bus, tourist)
-            else:
-                self.seatSingleTourist(bus, tourist)
-
     def seatSingleTourist(self, bus: BusContainer, tourist: Tourist):
         ignoreRowClause = False
         ignoreFairClause = False
@@ -130,7 +105,8 @@ class Tourbus(BusHelper):
         seatFound = False
         while not seatFound:
             for seatNum in self.seatRangeForTourist(tourist):
-                if (bus.seatIsEmpty(seatNum) and
+                if (bus.seatIsEmpty(seatNum) and self.dayNum == 0) or \
+                        (bus.seatIsEmpty(seatNum) and
                         (not tourist.alreadySatInRow(seatNum) or ignoreRowClause) and
                         (self.seatScoreIsFair(tourist, seatNum) or ignoreFairClause) and
                         (not self.seatCloseToPreviousNeighbours(tourist, seatNum, bus) or ignoreNeighbourClause)):

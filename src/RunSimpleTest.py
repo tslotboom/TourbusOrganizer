@@ -21,3 +21,6 @@ if __name__ == "__main__":
         print(f"Day {day}:")
         print(bus)
         day += 1
+
+    for tourist in tourists:
+        print(tourist, tourist.calculateTotalSeatScore())
