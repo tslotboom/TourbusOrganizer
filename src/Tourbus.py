@@ -114,7 +114,7 @@ class Tourbus(BusHelper):
                         (not self.seatCloseToPreviousNeighbours(tourist, seatNum, bus) or ignoreNeighbourClause) and
                         (self.seatIsOnCorrectSide(tourist, seatNum) or ignoreLeftRightClause) and
                         (not self.seatIsInBackRow(seatNum, self.totalPossibleSeats) or
-                            (not bus.backRowSeated) or ignoreBackSeatClause)):
+                        (not bus.backRowSeated) and (not tourist.inGroup()) or ignoreBackSeatClause)):
                     bus.add(tourist, seatNum)
                     seatFound = True
                     if tourist.inGroup() and not self.groupSeatedOnce(tourist.groupID):
