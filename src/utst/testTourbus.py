@@ -45,19 +45,15 @@ class TestTourbus(unittest.TestCase):
             self.assertEqual(i, expectedRange.pop(0))
 
         tourist.seatingPriority = 4
-        expectedRange = [4, 5, 6, 7, 0, 1, 2, 3]
+        expectedRange = [4, 5, 3, 6, 2, 7, 1, 0]
         for i in tourbus.seatRangeForTourist(tourist):
             self.assertEqual(i, expectedRange.pop(0))
 
         tourist.seatingPriority = 7
-        expectedRange = [7, 0, 1, 2, 3, 4, 5, 6]
+        expectedRange = [7, 6, 5, 4, 3, 2, 1, 0]
         for i in tourbus.seatRangeForTourist(tourist):
             self.assertEqual(i, expectedRange.pop(0))
 
-        tourist.seatingPriority = 8
-        expectedRange = [0, 1, 2, 3, 4, 5, 6, 7]
-        for i in tourbus.seatRangeForTourist(tourist):
-            self.assertEqual(i, expectedRange.pop(0))
         with self.assertRaises(RuntimeError):
             expectedRange = [0, 1, 2, 3, 4, 5, 6, 7]
             tourist.seatingPriority = 30

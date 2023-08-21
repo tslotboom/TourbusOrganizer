@@ -139,10 +139,15 @@ class Tourbus(BusHelper):
     def seatRangeForTourist(self, tourist):
         if tourist.seatingPriority > self.totalPossibleSeats or tourist.seatingPriority < 0:
             raise RuntimeError(f"Invalid seating priority for tourist {tourist.name} {tourist.seatingPriority}")
-        for i in range(tourist.seatingPriority, self.totalPossibleSeats):
-            yield i
-        for i in range(0, tourist.seatingPriority):
-            yield i
+        seat = tourist.seatingPriority
+        yield seat
+        for i in range(1, self.totalPossibleSeats):
+            if seat + i < self.totalPossibleSeats:
+                yield seat + i
+            if seat - i >= 0:
+                yield seat - i
+
+
 
     def seatScoreIsFair(self, tourist: Tourist, seatNum: int) -> bool:
         seatScore = self.calculateSeatScore(seatNum)
@@ -253,9 +258,9 @@ class Tourbus(BusHelper):
         return prevSeat, otherPrevSeat
 
     def giveTouristsSeatingPriority(self):
-        self.tourists = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore(), h.name))
-        for i in range(len(self.tourists)):
-            self.tourists[i].seatingPriority = i
+        touristsSorted = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore(), h.name))
+        for i in range(len(touristsSorted)):
+            touristsSorted[i].seatingPriority = i
 
     def reorderTouristListForGroups(self):
         newTouristList = []

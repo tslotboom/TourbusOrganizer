@@ -1,0 +1,17 @@
+{
+  "numDays": 1,
+  "groupedTourists": [
+    {
+      "groupID": 1,
+      "tourists": [
+        "tourist1",
+        "tourist2"
+      ]
+    }
+  ],
+  "tourists": [
+    "tourist3",
+    "tourist4"
+  ]
+}
+
