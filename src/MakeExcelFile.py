@@ -44,12 +44,10 @@ if __name__ == "__main__":
         raise KeyError(errorStr)
 
     tourbus = Tourbus(tourists, numDays)
-    print(tourists)
     tourbus.fillSeatsForTrip()
     tourbus.addOneToAllSeats()
     tourists = tourbus.getTourists()
     tourists = sorted(tourists, key=lambda h: (h.seatPositions[0]))
-    print(tourists)
     path = "tourbus.xlsx"
     workbook = Workbook()
     sheet = workbook.active

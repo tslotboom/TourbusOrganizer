@@ -147,8 +147,6 @@ class Tourbus(BusHelper):
             if seat - i >= 0:
                 yield seat - i
 
-
-
     def seatScoreIsFair(self, tourist: Tourist, seatNum: int) -> bool:
         seatScore = self.calculateSeatScore(seatNum)
         remainingScoreAllowance = self.getRemainingScoreAllowance(tourist)
@@ -258,7 +256,7 @@ class Tourbus(BusHelper):
         return prevSeat, otherPrevSeat
 
     def giveTouristsSeatingPriority(self):
-        touristsSorted = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore(), h.name))
+        touristsSorted = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore()))
         for i in range(len(touristsSorted)):
             touristsSorted[i].seatingPriority = i
 
@@ -301,8 +299,6 @@ class Tourbus(BusHelper):
         if left and tourist.leftSeatings <= tourist.rightSeatings or \
                 not left and tourist.rightSeatings <= tourist.leftSeatings:
             return True
-
-
 
     def getTourists(self) -> List[Tourist]:
         return self.tourists
