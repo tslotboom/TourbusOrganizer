@@ -4,11 +4,11 @@ from .Tourist import Tourist
 from .BusHelper import BusHelper
 from .BusContainer import BusContainer
 
-from typing import List, Tuple
+from typing import List, Tuple, Set, Dict
 from enum import Enum
 
 
-class NeightbourClassification(Enum):
+class NeighbourClassification(Enum):
     SAME = 4
     BESIDE = 3
     VERTICAL = 2
@@ -50,7 +50,7 @@ class Tourbus(BusHelper):
             self.groupsSeated = []
             self.dayNum = dayNum
             self.giveTouristsSeatingPriority()
-            self.reorderTouristListForGroups()
+            self.reorderTouristList()
             self.fillSeatsForDay()
 
     def fillSeatsForDay(self) -> None:
@@ -69,34 +69,33 @@ class Tourbus(BusHelper):
         return groupID in self.groupsSeated
 
     def seatGroupedTourist(self, bus: BusContainer, tourist: Tourist):
-        groupSeatNumbers = set()
-        self.getGroupSeatNumbers(bus, groupSeatNumbers, tourist)
-        seatFound = self.findSeatForGroupedTourist(bus, groupSeatNumbers, tourist)
+        seatFound = self.findSeatForGroupedTourist(bus, tourist)
         if not seatFound:
             self.seatSingleTourist(bus, tourist)
 
-    def getGroupSeatNumbers(self, bus, groupSeatNumbers, tourist):
+    def findSeatForGroupedTourist(self, bus, tourist):
+        groupSeatNumbers = self.getGroupSeatNumbers(bus, tourist)
+        if len(groupSeatNumbers) == 0:
+            return False
+        closenessFactors = [
+            NeighbourClassification.BESIDE.value,
+            NeighbourClassification.VERTICAL.value,
+            NeighbourClassification.DIAGONAL.value
+        ]
+        for closenessFactor in closenessFactors:
+            for seatNum in [seat for seat in self.seatRangeForTourist(tourist) if bus.seatIsEmpty(seat)]:
+                for otherSeat in groupSeatNumbers:
+                    if self.getCloseNessFactor(seatNum, otherSeat) >= closenessFactor:
+                        bus.add(tourist, seatNum)
+                        return True
+        return False
+
+    def getGroupSeatNumbers(self, bus, tourist) -> Set[int]:
+        groupSeatNumbers = set()
         for seatNum in range(self.totalPossibleSeats):
             if not bus.seatIsEmpty(seatNum) and bus.get(seatNum).groupID == tourist.groupID:
                 groupSeatNumbers.add(seatNum)
-
-    def findSeatForGroupedTourist(self, bus, groupSeatNumbers, tourist):
-        seatFound = False
-        closenessFactors = [
-            NeightbourClassification.BESIDE.value,
-            NeightbourClassification.VERTICAL.value,
-            NeightbourClassification.DIAGONAL.value
-        ]
-        while not seatFound and len(closenessFactors) > 0:
-            closenessFactor = closenessFactors.pop(0)
-            for seatNum in range(self.totalPossibleSeats):
-                adjacentSeat = bus.adjacentSeat(seatNum)
-                if bus.seatIsEmpty(seatNum) and self.getCloseNessFactor(seatNum, adjacentSeat) == closenessFactor and \
-                        adjacentSeat in groupSeatNumbers:
-                    bus.add(tourist, seatNum)
-                    seatFound = True
-                    break
-        return seatFound
+        return groupSeatNumbers
 
     def seatSingleTourist(self, bus: BusContainer, tourist: Tourist):
         ignoreRowClause = False
@@ -237,15 +236,15 @@ class Tourbus(BusHelper):
         row, col = self.getRowAndCol(seatNum)
         otherRow, otherCol = self.getRowAndCol(otherSeat)
         if row == otherRow and col == otherCol:
-            return NeightbourClassification.SAME.value
+            return NeighbourClassification.SAME.value
         elif otherRow == row:
-            return NeightbourClassification.BESIDE.value
+            return NeighbourClassification.BESIDE.value
         elif otherCol == col and abs(row - otherRow) == 1:
-            return NeightbourClassification.VERTICAL.value
+            return NeighbourClassification.VERTICAL.value
         elif abs(row - otherRow) == 1 and abs(col - otherCol):
-            return NeightbourClassification.DIAGONAL.value
+            return NeighbourClassification.DIAGONAL.value
         else:
-            return NeightbourClassification.OTHER.value
+            return NeighbourClassification.OTHER.value
 
     def getPrevSeats(self, tourist: Tourist, otherTourist: Tourist, dayNum: int) -> Tuple[int, int]:
         try:
@@ -256,11 +255,11 @@ class Tourbus(BusHelper):
         return prevSeat, otherPrevSeat
 
     def giveTouristsSeatingPriority(self):
-        touristsSorted = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore()))
+        touristsSorted = sorted(self.tourists, key=lambda h: (-h.calculateTotalSeatScore(), self.tourists.index(h)))
         for i in range(len(touristsSorted)):
             touristsSorted[i].seatingPriority = i
 
-    def reorderTouristListForGroups(self):
+    def reorderTouristList(self):
         newTouristList = []
         groupIDs, noGroupIDs = self.separateTouristsByGroupOrNoGroup()
 
@@ -273,7 +272,7 @@ class Tourbus(BusHelper):
 
         self.tourists = newTouristList
 
-    def separateTouristsByGroupOrNoGroup(self) -> Tuple[OrderedDict[int, List[Tourist]], List[Tourist]]:
+    def separateTouristsByGroupOrNoGroup(self) -> Tuple[Dict[int, List[Tourist]], List[Tourist]]:
         groupIDs = OrderedDict()
         noGroupIDs = []
         for tourist in self.tourists:
@@ -284,15 +283,6 @@ class Tourbus(BusHelper):
             else:
                 noGroupIDs.append(tourist)
         return groupIDs, noGroupIDs
-
-    def getGroupIDAvgSeatScores(self, groupIDs) -> OrderedDict[int, float]:
-        groupIDAvgSeatScores = OrderedDict().fromkeys(groupIDs.keys())
-        for key in groupIDAvgSeatScores.keys():
-            totalSeatScores = [i.calculateTotalSeatScore() for i in groupIDs[key]]
-            s = sum(totalSeatScores)
-            l = len(totalSeatScores)
-            groupIDAvgSeatScores[key] = s / l
-        return groupIDAvgSeatScores
 
     def seatIsOnCorrectSide(self, tourist: Tourist, seatNum: int) -> bool:
         left = seatNum % 2 == 0
