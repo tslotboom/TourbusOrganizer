@@ -1,3 +1,6 @@
 __pycache__
 .idea
-
+*.xlsx
+*.xml
+*.json
+!sampleTourists.json
