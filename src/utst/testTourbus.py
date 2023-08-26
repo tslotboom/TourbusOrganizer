@@ -251,6 +251,7 @@ class TestTourbus(unittest.TestCase):
         tourbus = self.getTourbus(numTourists, numDays)
         tourist = tourbus.tourists[0]
         tourist.seatPositions = seatPositions
+        tourist.totalSeatScore = tourist.calculateTotalSeatScore()
         isFair = tourbus.seatScoreIsFair(tourist, seat)
         self.assertEqual(isFair, expectedIsFair)
 
@@ -266,6 +267,7 @@ class TestTourbus(unittest.TestCase):
         tourbus = self.getTourbus(numTourists, numDays)
         tourist = tourbus.tourists[0]
         tourist.seatPositions = seatPositions
+        tourist.totalSeatScore = tourist.calculateTotalSeatScore()
         self.assertEqual(expectedR, tourbus.getRemainingScoreAllowance(tourist))
 
     def testGetOptimisticSumOfRemainingScores(self):
@@ -583,7 +585,7 @@ class TestTourbus(unittest.TestCase):
         tourbus.fillSeatsForDay()
         for i in range(len(tourbus.tourists)):
             self.assertEqual(tourbus.tourists[i].seatPositions[0], i)
-        tourbus.addOneToAllSeats()
+        tourbus.addOneToAllSeatPositions()
         for i in range(len(tourbus.tourists)):
             self.assertEqual(tourbus.tourists[i].seatPositions[0], i + 1)
 

@@ -1,9 +1,12 @@
 import os
 
 from openpyxl import Workbook
+from openpyxl.styles import PatternFill
 from .Tourbus import Tourbus, Tourist
+from colour import Color
 import string
 import json
+
 
 
 def getExcelCol(num: int):
@@ -15,6 +18,38 @@ def getExcelCol(num: int):
         num = (num - remainder) // numLetters
         col = alphabet[remainder] + col
     return col
+
+
+def colorPicker(num, maxNum):
+    normalized = (float(num) / maxNum) * 6.0
+    if normalized < 1:
+        r = 1
+        b = 0
+        g = normalized
+    elif normalized < 2:
+        r = 1 - (normalized - 1)
+        b = 0
+        g = 1
+    elif normalized < 3:
+        r = 0
+        b = normalized - 2
+        g = 1
+    elif normalized < 4:
+        r = 0
+        b = 1
+        g = 1 - (normalized - 3)
+    elif normalized < 5:
+        r = normalized - 4
+        b = 1
+        g = 0
+    else:
+        r = 1
+        g = 0
+        b = 1 - (normalized - 5)
+    c = Color(rgb=(r, g, b))
+    c.set_luminance(0.75)
+    return f"00{c.get_hex_l()[1:]}"
+
 
 
 def makeExcelFile(data: json):
@@ -38,26 +73,61 @@ def makeExcelFile(data: json):
 
     tourbus = Tourbus(tourists, numDays)
     tourbus.fillSeatsForTrip()
-    tourbus.addOneToAllSeats()
+    tourbus.addOneToAllSeatPositions()
     tourists = tourbus.getTourists()
     tourists = sorted(tourists, key=lambda h: (h.seatPositions[0]))
     path = "tourbus.xlsx"
     workbook = Workbook()
-    sheet = workbook.active
+    summaryPage = workbook.active
+    touristColLength = max([len(i) for i in [i.name for i in tourists] + ["tourists"]])
+    summaryPage.column_dimensions["A"].width = touristColLength + 1
 
-    sheet["A1"] = "Tourists"
-    for day in range(numDays):
-        sheet[f"{getExcelCol(day + 2)}1"] = f"Day {day + 1}"
-    sheet[f"{getExcelCol(numDays + 2)}1"] = f"Seat Score:"
+    summaryPage["A1"] = "Tourists"
+    for daySheet in range(numDays):
+        summaryPage[f"{getExcelCol(daySheet + 2)}1"] = f"Day {daySheet + 1}"
+    summaryPage[f"{getExcelCol(numDays + 2)}1"] = f"Seat Score:"
 
     for row in range(len(tourists)):
         tourist = tourists[row]
         excelRow = row + 2
-        sheet[f"A{excelRow}"] = tourist.name
+        cell = summaryPage[f"A{excelRow}"]
+        cell.value = tourist.name
+        color = colorPicker(row, len(tourists))
+        cell.fill = PatternFill(fgColor=color, fill_type="solid")
         for col in range(len(tourist.seatPositions)):
             seat = tourist.seatPositions[col]
-            sheet[f"{getExcelCol(col + 2)}{excelRow}"] = seat
-        sheet[f"{getExcelCol(len(tourist.seatPositions) + 2)}{excelRow}"] = tourist.calculateTotalSeatScore()
+            cell = summaryPage[f"{getExcelCol(col + 2)}{excelRow}"]
+            cell.value = seat
+
+        summaryPage[f"{getExcelCol(len(tourist.seatPositions) + 2)}{excelRow}"] = tourist.totalSeatScore
+
+    BUS_ROW_OFFSET = 4
+    BUS_COL_OFFSET = 3
+    for i in range(numDays):
+        dayNum = i + 1
+        daySheet = workbook.create_sheet(f"Day {dayNum}")
+        daySheet["A1"] = "Tourists"
+        daySheet.column_dimensions["A"].width = touristColLength + 1
+        daySheet["B1"] = "Seat Position"
+        daySheet.column_dimensions["B"].width = len("Seat Position")
+
+        daySheet[f"{getExcelCol(BUS_COL_OFFSET + 1)}1"] = "Bus Layout for the Day:"
+
+        daySheet.column_dimensions[f"{getExcelCol(BUS_COL_OFFSET + 1)}"].width = touristColLength + 1
+        daySheet.column_dimensions[f"{getExcelCol(BUS_COL_OFFSET + 2)}"].width = touristColLength + 1
+        for row in range(len(tourists)):
+            tourist = tourists[row]
+            excelRow = row + 2
+            cell = daySheet[f"A{excelRow}"]
+            cell.value = tourist.name
+            color = colorPicker(row, len(tourists))
+            cell.fill = PatternFill(fgColor=color, fill_type="solid")
+            daySheet[f"B{excelRow}"] = tourist.seatPositions[i]
+
+            row, col = tourbus.getRowAndCol(tourist.seatPositions[i] - 1)
+            busSeatCell = daySheet[f"{getExcelCol(col + BUS_ROW_OFFSET)}{row + BUS_COL_OFFSET}"]
+            busSeatCell.fill = PatternFill(fgColor=color, fill_type="solid")
+            busSeatCell.value = tourist.name
 
     workbook.save(path)
     print(os.path.join(os.getcwd(), path))

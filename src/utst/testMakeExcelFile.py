@@ -17,3 +17,12 @@ class TestMakeExcelFile(unittest.TestCase):
         self.assertEqual(getExcelCol(703), "AAA")
         self.assertEqual(getExcelCol(10000), "NTP")
         self.assertEqual(getExcelCol(16384), "XFD")
+
+    def testColorPicker(self):
+        self.assertEqual(colorPicker(0, 6), "00ff7f7f")
+        self.assertEqual(colorPicker(1, 6), "00ffff7f")
+        self.assertEqual(colorPicker(2, 6), "007fff7f")
+        self.assertEqual(colorPicker(3, 6), "007fffff")
+        self.assertEqual(colorPicker(4, 6), "007f7fff")
+        self.assertEqual(colorPicker(5, 6), "00ff7fff")
+        self.assertEqual(colorPicker(6, 6), "00ff7f7f")

@@ -27,15 +27,12 @@ class BusContainer(BusHelper):
         if seatNum < 0 or seatNum >= self.totalPossibleSpots:
             raise RuntimeError(f"Seat number {seatNum} outside range of permissible seat options [{0}, "
                                f"{self.totalPossibleSpots}]")
-        tourist.seatPositions.append(seatNum)
+        tourist.sitDown(seatNum)
         row, col = self.getRowAndCol(seatNum)
         self.bus[row][col] = tourist
         if self.oddNumOfTourists and self.seatIsInBackRow(seatNum, self.totalPossibleSpots):
             self.backRowSeated = True
-        if seatNum % 2 == 0:
-            tourist.leftSeatings += 1
-        else:
-            tourist.rightSeatings += 1
+
 
     def get(self, seatNumber: int) -> Optional[Tourist]:
         if seatNumber < 0 or seatNumber >= self.totalPossibleSpots:
