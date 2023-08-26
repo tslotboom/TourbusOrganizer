@@ -3,5 +3,5 @@ __pycache__
 venv
 *.xlsx
 *.xml
-*.json
-!sampleTourists.json
+./src/*.json
+!./src/sampleTourists.json
