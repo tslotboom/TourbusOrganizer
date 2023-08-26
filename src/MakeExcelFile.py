@@ -17,24 +17,17 @@ def getExcelCol(num: int):
     return col
 
 
-if __name__ == "__main__":
-    print()
-    dirPath = os.path.dirname(os.path.abspath(__file__))
+def makeExcelFile(data: json):
     try:
-        with open(os.path.join(dirPath, 'tourists.json')) as file:
-            data = json.load(file)
-            numDays = data["numDays"]
-            tourists = []
-            if "groupedTourists" in data:
-                for group in data["groupedTourists"]:
-                    groupID = group["groupID"]
-                    tourists.extend([Tourist(i, groupID=groupID) for i in group["tourists"]])
-            if "tourists" in data:
-                tourists.extend([Tourist(i) for i in data["tourists"]])
-    except FileNotFoundError:
-        raise FileNotFoundError(f"File not found, need a file named tourists.json in {dirPath}")
-    except json.JSONDecodeError:
-        raise json.JSONDecodeError("Error decoding JSON file")
+        numDays = data["numDays"]
+        tourists = []
+
+        if "groupedTourists" in data:
+            for group in data["groupedTourists"]:
+                groupID = group["groupID"]
+                tourists.extend([Tourist(i, groupID=groupID) for i in group["tourists"]])
+        if "tourists" in data:
+            tourists.extend([Tourist(i) for i in data["tourists"]])
     except KeyError:
         errorStr = ""
         errorStr += "Json file not set up correctly\n"
@@ -68,3 +61,16 @@ if __name__ == "__main__":
 
     workbook.save(path)
     print(os.path.join(os.getcwd(), path))
+
+
+if __name__ == "__main__":
+    dirPath = os.path.dirname(os.path.abspath(__file__))
+    try:
+        with open(os.path.join(dirPath, 'tourists.json')) as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found, need a file named tourists.json in {dirPath}")
+    except json.JSONDecodeError:
+        raise json.JSONDecodeError("Error decoding JSON file")
+
+    makeExcelFile(data)
