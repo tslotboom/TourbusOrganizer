@@ -1,7 +1,11 @@
-from flask import Flask 
+from flask import Flask, request
+
 
 app = Flask(__name__)
 
-@app.route('/excelFile')
+
+@app.route('/getExcelFile', methods = ['POST'])
 def getExcelFile():
-    return {'file': 'test'}
+    data = request.json.get('data')
+    print(data)
+    return f"Received data {data}"
