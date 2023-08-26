@@ -54,7 +54,7 @@ def colorPicker(num, maxNum):
 
 def makeExcelFile(data: json):
     try:
-        numDays = data["numDays"]
+        numDays = int(data["numDays"])
         tourists = []
 
         if "groupedTourists" in data:
@@ -76,7 +76,12 @@ def makeExcelFile(data: json):
     tourbus.addOneToAllSeatPositions()
     tourists = tourbus.getTourists()
     tourists = sorted(tourists, key=lambda h: (h.seatPositions[0]))
-    path = "tourbus.xlsx"
+    fileName = "tourbus.xlsx"
+    cwd = os.path.abspath(os.path.dirname(__file__))
+    # absPathToFile = os.path.join(cwd, path)
+    pathToFile = os.path.join(cwd, "../app/src", fileName)
+    # pathToFile = f"{cwd}../app/{fileName}"
+
     workbook = Workbook()
     summaryPage = workbook.active
     touristColLength = max([len(i) for i in [i.name for i in tourists] + ["tourists"]])
@@ -128,9 +133,9 @@ def makeExcelFile(data: json):
             busSeatCell = daySheet[f"{getExcelCol(col + BUS_ROW_OFFSET)}{row + BUS_COL_OFFSET}"]
             busSeatCell.fill = PatternFill(fgColor=color, fill_type="solid")
             busSeatCell.value = tourist.name
-
-    workbook.save(path)
-    print(os.path.join(os.getcwd(), path))
+    print(pathToFile)
+    workbook.save(pathToFile)
+    # print(os.path.join(os.getcwd(), fileName))
 
 
 if __name__ == "__main__":
