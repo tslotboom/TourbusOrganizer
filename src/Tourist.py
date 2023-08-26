@@ -14,6 +14,7 @@ class Tourist(BusHelper):
             self.seatPositions = seatPositions
         self.leftSeatings = 0
         self.rightSeatings = 0
+        self.totalSeatScore = 0
 
     def __repr__(self) -> str:
         return self.name
@@ -37,3 +38,21 @@ class Tourist(BusHelper):
 
     def inGroup(self):
         return self.groupID is not None
+
+    def sitDown(self, seatNum) -> None:
+        self.seatPositions.append(seatNum)
+        self.totalSeatScore += self.calculateSeatScore(seatNum)
+        if seatNum % 2 == 0:
+            self.leftSeatings += 1
+        else:
+            self.rightSeatings += 1
+
+    def removeSeat(self) -> None:
+        if len(self.seatPositions) == 0:
+            return
+        seatNum = self.seatPositions.pop()
+        self.totalSeatScore -= self.calculateSeatScore(seatNum)
+        if seatNum % 2 == 0:
+            self.leftSeatings -= 1
+        else:
+            self.rightSeatings -= 1

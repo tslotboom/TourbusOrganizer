@@ -151,12 +151,12 @@ class Tourbus(BusHelper):
         remainingScoreAllowance = self.getRemainingScoreAllowance(tourist)
 
         # Temporarily add this seat to tourist's list of seats to check if the seat is fair
-        tourist.seatPositions.append(seatNum)
+        tourist.sitDown(seatNum)
 
         optimisticSumOfRemainingScores = self.getOptimisticSumOfRemainingScores(tourist)
 
-        # remove temporarily added seat position
-        tourist.seatPositions.pop()
+        # Remove temporarily added seat position
+        tourist.removeSeat()
 
         maxAllowableScoreToday = remainingScoreAllowance - optimisticSumOfRemainingScores
         maxAllowableScoreToday = 0 if maxAllowableScoreToday < 0 else maxAllowableScoreToday
@@ -164,7 +164,7 @@ class Tourbus(BusHelper):
 
     def getRemainingScoreAllowance(self, tourist: Tourist) -> float:
         projectedWithTolerance = self.projectedSeatScore + self.seatScoreTolerance
-        remainingScoreAllowance = projectedWithTolerance - tourist.calculateTotalSeatScore()
+        remainingScoreAllowance = projectedWithTolerance - tourist.totalSeatScore
         if remainingScoreAllowance < 0:
             return 0
         return remainingScoreAllowance
@@ -293,7 +293,7 @@ class Tourbus(BusHelper):
     def getTourists(self) -> List[Tourist]:
         return self.tourists
 
-    def addOneToAllSeats(self):
+    def addOneToAllSeatPositions(self):
         for tourist in self.tourists:
             for i in range(len(tourist.seatPositions)):
                 tourist.seatPositions[i] += 1
