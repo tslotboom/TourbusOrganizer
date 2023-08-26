@@ -50,18 +50,19 @@ function App() {
       }
     })
     .then((blob) => {
+      alert("File generated!")
       // Create a URL for the blob data
       // const url = window.URL.createObjectURL(blob);
 
-      // Create a link element to trigger the download
-      const a = document.createElement("a");
-      console.log("Current directory:", __dirname);
-      a.href = "./tourbus.xlsx";
-      a.download = "tourbus.xlsx"; // Set the filename for the download
-      document.body.appendChild(a);
-      a.click();
+      // // Create a link element to trigger the download
+      // const a = document.createElement("a");
+      // // console.log("Current directory:", __dirname);
+      // a.href = "tourbus.xlsx";
+      // a.download = "tourbus.xlsx"; // Set the filename for the download
+      // document.body.appendChild(a);
+      // a.click();
 
-      // Clean up by revoking the object URL
+      // // Clean up by revoking the object URL
       // window.URL.revokeObjectURL(url);
     })
     .catch((error) => {
@@ -103,8 +104,9 @@ function App() {
       <legend>Enter information about the tour: </legend>
       <label>Length of tour in days:  </label>
       <input type="text" value={numDays} onChange={(e) => setNumdays(e.target.value)}/>
-      <br></br>
-      <label>Names of tourists: </label>
+      <br />
+      <button onClick={addTourist}>Add another tourist</button><br />
+      <label>Names of tourists: </label><br />
       {tourists.map((tourist, index) => (
         <div key={index}>
           <input
@@ -114,9 +116,8 @@ function App() {
           />
         </div>
       ))}
-      <button onClick={addTourist}>Add another tourist</button>
-      <button onClick={() => generateFile(numDays, tourists)}>Generate File</button>
-
+      <button onClick={() => generateFile(numDays, tourists)}>Generate File</button><br />
+      <a href="/tourbus.xlsx" download="tourbus.xlsx" target="_blank" rel="noreferrer">Download Seating Plan</a>
     </>
    );
 }

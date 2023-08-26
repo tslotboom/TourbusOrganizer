@@ -76,11 +76,10 @@ def makeExcelFile(data: json):
     tourbus.addOneToAllSeatPositions()
     tourists = tourbus.getTourists()
     tourists = sorted(tourists, key=lambda h: (h.seatPositions[0]))
+
     fileName = "tourbus.xlsx"
     cwd = os.path.abspath(os.path.dirname(__file__))
-    # absPathToFile = os.path.join(cwd, path)
-    pathToFile = os.path.join(cwd, "../app/src", fileName)
-    # pathToFile = f"{cwd}../app/{fileName}"
+    pathToFile = os.path.join(cwd, "../app/public", fileName)
 
     workbook = Workbook()
     summaryPage = workbook.active
@@ -135,7 +134,6 @@ def makeExcelFile(data: json):
             busSeatCell.value = tourist.name
     print(pathToFile)
     workbook.save(pathToFile)
-    # print(os.path.join(os.getcwd(), fileName))
 
 
 if __name__ == "__main__":
